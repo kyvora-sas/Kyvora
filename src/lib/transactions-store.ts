@@ -214,10 +214,19 @@ function getOrCreatePool(connectionString?: string): Pool {
     max: 5,
     idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 5000,
+    statement_timeout: 10000,
+    query_timeout: 10000,
   });
 
   pool.on("error", (err) => {
     console.error("[PostgresTransactionStore] Error inesperado en pool de conexiones:", err.message);
+  });
+
+  // Garantizar search_path hacia 'public' explícito al adquirir conexiones
+  pool.on("connect", (client) => {
+    client.query("SET search_path TO public;").catch((err) => {
+      console.warn("[PostgresTransactionStore] No se pudo configurar search_path:", err.message);
+    });
   });
 
   if (!connectionString && process.env.NODE_ENV !== "test") {
@@ -225,6 +234,29 @@ function getOrCreatePool(connectionString?: string): Pool {
   }
 
   return pool;
+}
+
+export function isDatabaseError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  if (typeof e.code === "string" && (e.code.length === 5 || e.code === "ECONNREFUSED" || e.code === "ETIMEDOUT")) {
+    return true;
+  }
+  if (e.name === "DatabaseError" || e.name === "PoolError") {
+    return true;
+  }
+  const msg = typeof e.message === "string" ? e.message.toLowerCase() : "";
+  if (
+    msg.includes("connect") ||
+    msg.includes("timeout") ||
+    msg.includes("database") ||
+    msg.includes("relation") ||
+    msg.includes("column") ||
+    msg.includes("terminating connection")
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -239,7 +271,7 @@ export class PostgresTransactionStore implements ITransactionStore {
 
   async save(record: TransactionRecord): Promise<void> {
     const query = `
-      INSERT INTO donations (
+      INSERT INTO public.donations (
         reference,
         amount_cop,
         amount_in_cents,
@@ -276,7 +308,7 @@ export class PostgresTransactionStore implements ITransactionStore {
 
   async findByReference(reference: string): Promise<TransactionRecord | null> {
     const res = await this.pool.query(
-      `SELECT * FROM donations WHERE reference = $1 LIMIT 1;`,
+      `SELECT * FROM public.donations WHERE reference = $1 LIMIT 1;`,
       [reference]
     );
     if (res.rows.length === 0) return null;
@@ -286,7 +318,7 @@ export class PostgresTransactionStore implements ITransactionStore {
   async findByWompiTransactionId(wompiTransactionId: string): Promise<TransactionRecord | null> {
     if (!wompiTransactionId) return null;
     const res = await this.pool.query(
-      `SELECT * FROM donations WHERE wompi_transaction_id = $1 LIMIT 1;`,
+      `SELECT * FROM public.donations WHERE wompi_transaction_id = $1 LIMIT 1;`,
       [wompiTransactionId]
     );
     if (res.rows.length === 0) return null;
@@ -295,7 +327,7 @@ export class PostgresTransactionStore implements ITransactionStore {
 
   async isEventProcessed(eventId: string): Promise<boolean> {
     const res = await this.pool.query(
-      `SELECT 1 FROM donations WHERE $1 = ANY(processed_event_ids) LIMIT 1;`,
+      `SELECT 1 FROM public.donations WHERE $1 = ANY(processed_event_ids) LIMIT 1;`,
       [eventId]
     );
     return res.rows.length > 0;
@@ -312,7 +344,7 @@ export class PostgresTransactionStore implements ITransactionStore {
     try {
       await client.query("BEGIN;");
       const currentRes = await client.query(
-        `SELECT * FROM donations WHERE reference = $1 FOR UPDATE;`,
+        `SELECT * FROM public.donations WHERE reference = $1 FOR UPDATE;`,
         [reference]
       );
       if (currentRes.rows.length === 0) {
@@ -341,7 +373,7 @@ export class PostgresTransactionStore implements ITransactionStore {
           : current.processedEventIds;
 
         await client.query(
-          `UPDATE donations SET processed_event_ids = $1, audit_logs = $2, updated_at = NOW() WHERE reference = $3;`,
+          `UPDATE public.donations SET processed_event_ids = $1, audit_logs = $2, updated_at = NOW() WHERE reference = $3;`,
           [processed, JSON.stringify(auditLogs), reference]
         );
         await client.query("COMMIT;");
@@ -363,7 +395,7 @@ export class PostgresTransactionStore implements ITransactionStore {
       const targetWompiId = wompiTransactionId || current.wompiTransactionId || null;
 
       const updateRes = await client.query(
-        `UPDATE donations 
+        `UPDATE public.donations
          SET status = $1, wompi_transaction_id = $2, processed_event_ids = $3, audit_logs = $4, updated_at = NOW() 
          WHERE reference = $5 
          RETURNING *;`,
@@ -380,7 +412,7 @@ export class PostgresTransactionStore implements ITransactionStore {
   }
 
   async getAll(): Promise<TransactionRecord[]> {
-    const res = await this.pool.query(`SELECT * FROM donations ORDER BY created_at DESC;`);
+    const res = await this.pool.query(`SELECT * FROM public.donations ORDER BY created_at DESC;`);
     return res.rows.map((r) => this.mapRowToRecord(r));
   }
 

@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
-import { transactionStore, TransactionRecord } from "@/lib/transactions-store";
+import {
+  transactionStore,
+  TransactionRecord,
+  isDatabaseError,
+} from "@/lib/transactions-store";
 import { wompiConfig } from "@/config/wompi";
-import { parseWompiReturnParams } from "@/lib/wompi";
+import {
+  parseWompiReturnParams,
+  fetchWompiTransactionById,
+  fetchWompiTransactionByReference,
+  WompiApiTransaction,
+} from "@/lib/wompi";
 
 function mapWompiStatus(status: unknown): "APPROVED" | "PENDING" | "DECLINED" | "VOIDED" | "ERROR" {
   switch (String(status)) {
@@ -17,6 +26,13 @@ function mapWompiStatus(status: unknown): "APPROVED" | "PENDING" | "DECLINED" | 
     default:
       return "PENDING";
   }
+}
+
+function inferTargetId(reference: string): string {
+  if (reference.includes("-PULSO-")) return "pulso";
+  if (reference.includes("-QUAKE-")) return "quakenet";
+  if (reference.includes("-PULSAI-")) return "pulsai";
+  return "general";
 }
 
 export async function GET(request: Request) {
@@ -55,13 +71,18 @@ export async function GET(request: Request) {
     }
 
     let record: TransactionRecord | null = null;
+    let dbError: Error | null = null;
 
-    // 1. Búsqueda en almacenamiento local por referencia
+    // 1. Búsqueda en persistencia interna por referencia
     if (reference) {
       try {
         record = await transactionStore.findByReference(reference);
-      } catch (dbErr: unknown) {
-        console.warn("[api/donate/status] Error al consultar referencia en almacenamiento:", (dbErr as Error)?.message);
+      } catch (err: unknown) {
+        dbError = err as Error;
+        console.error(
+          "[api/donate/status] Fallo al consultar referencia en base de datos:",
+          (err as Error)?.message
+        );
       }
     }
 
@@ -69,8 +90,12 @@ export async function GET(request: Request) {
     if (!record && transactionId) {
       try {
         record = await transactionStore.findByWompiTransactionId(transactionId);
-      } catch (dbErr: unknown) {
-        console.warn("[api/donate/status] Error al consultar wompiTransactionId en almacenamiento:", (dbErr as Error)?.message);
+      } catch (err: unknown) {
+        dbError = err as Error;
+        console.error(
+          "[api/donate/status] Fallo al consultar wompiTransactionId en base de datos:",
+          (err as Error)?.message
+        );
       }
     }
 
@@ -93,232 +118,190 @@ export async function GET(request: Request) {
             { status: 400 }
           );
         }
-      } catch (dbErr: unknown) {
-        console.warn("[api/donate/status] Error al verificar unicidad de ID de Wompi:", (dbErr as Error)?.message);
+      } catch (err: unknown) {
+        console.warn(
+          "[api/donate/status] Error al verificar unicidad de ID de Wompi en base de datos:",
+          (err as Error)?.message
+        );
       }
     }
 
     // 3. Sincronización en vivo con API oficial de Wompi para donaciones PENDING
-    if (record && record.status === "PENDING" && effectiveTxId) {
-      if (!privateKey) {
-        console.warn("[api/donate/status] WOMPI_PRIVATE_KEY no configurada. No es posible sincronizar estado en vivo con Wompi.");
-      } else {
-        try {
-          const apiUrl = `${wompiConfig.apiBaseUrl[env]}/transactions/${effectiveTxId}`;
-          const res = await fetch(apiUrl, {
-            headers: { Authorization: `Bearer ${privateKey}` },
-            cache: "no-store",
-          });
+    // Se intenta sincronizar tanto si se dispone del ID de Wompi como si solo se dispone de la referencia
+    if (record && record.status === "PENDING" && privateKey) {
+      try {
+        let wompiTx: WompiApiTransaction | undefined;
 
-          if (res.ok) {
-            const wompiData = await res.json();
-            const tx = wompiData?.data;
-            if (tx && tx.status) {
-              // Verificación estricta de seguridad
-              if (tx.reference && tx.reference !== record.reference) {
-                console.warn(
-                  `[api/donate/status] Discrepancia de referencia detectada: interna=${record.reference}, Wompi=${tx.reference}`
-                );
-                return NextResponse.json(
-                  {
-                    error: `El ID de transacción de Wompi ingresado corresponde a otra referencia (${tx.reference}) y no a la referencia consultada (${record.reference}).`,
-                    code: "REFERENCE_MISMATCH",
-                    requestedReference: record.reference,
-                    actualReference: tx.reference,
-                  },
-                  { status: 400 }
-                );
-              }
+        if (effectiveTxId) {
+          const res = await fetchWompiTransactionById(effectiveTxId, privateKey, env);
+          if (res.ok && res.data) wompiTx = res.data;
+        }
 
-              if (tx.currency && tx.currency !== record.currency) {
-                console.warn(
-                  `[api/donate/status] Discrepancia de moneda detectada: interna=${record.currency}, Wompi=${tx.currency}`
-                );
-                return NextResponse.json(
-                  {
-                    error: `Discrepancia en la moneda reportada por Wompi (${tx.currency}) frente a la esperada (${record.currency}).`,
-                    code: "CURRENCY_MISMATCH",
-                  },
-                  { status: 400 }
-                );
-              }
+        if (!wompiTx && record.reference) {
+          const res = await fetchWompiTransactionByReference(record.reference, privateKey, env);
+          if (res.ok && res.data) wompiTx = res.data;
+        }
 
-              if (tx.amount_in_cents && Number(tx.amount_in_cents) !== record.amountInCents) {
-                console.warn(
-                  `[api/donate/status] Discrepancia de importe detectada: interna=${record.amountInCents}, Wompi=${tx.amount_in_cents}`
-                );
-                return NextResponse.json(
-                  {
-                    error: `Discrepancia en el importe reportado por Wompi ($${Math.round(Number(tx.amount_in_cents) / 100).toLocaleString("es-CO")} COP) frente al registro del servidor ($${record.amountCOP.toLocaleString("es-CO")} COP).`,
-                    code: "AMOUNT_MISMATCH",
-                  },
-                  { status: 400 }
-                );
-              }
+        if (wompiTx && wompiTx.status) {
+          // Verificaciones estrictas de integridad y seguridad
+          if (wompiTx.reference && wompiTx.reference !== record.reference) {
+            console.warn(
+              `[api/donate/status] Discrepancia de referencia: interna=${record.reference}, Wompi=${wompiTx.reference}`
+            );
+            return NextResponse.json(
+              {
+                error: `El ID de transacción de Wompi ingresado corresponde a otra referencia (${wompiTx.reference}) y no a la referencia consultada (${record.reference}).`,
+                code: "REFERENCE_MISMATCH",
+                requestedReference: record.reference,
+                actualReference: wompiTx.reference,
+              },
+              { status: 400 }
+            );
+          }
 
-              const mappedStatus = mapWompiStatus(tx.status);
+          if (wompiTx.currency && wompiTx.currency !== record.currency) {
+            console.warn(
+              `[api/donate/status] Discrepancia de moneda: interna=${record.currency}, Wompi=${wompiTx.currency}`
+            );
+            return NextResponse.json(
+              {
+                error: `Discrepancia en la moneda reportada por Wompi (${wompiTx.currency}) frente a la esperada (${record.currency}).`,
+                code: "CURRENCY_MISMATCH",
+              },
+              { status: 400 }
+            );
+          }
 
-              if (mappedStatus !== record.status) {
-                try {
-                  const updated = await transactionStore.updateStatus(
-                    record.reference,
-                    mappedStatus,
-                    tx.id,
-                    undefined,
-                    `Estado sincronizado en tiempo real desde API Wompi (${tx.status}).`
-                  );
-                  if (updated) record = updated;
-                } catch (updateErr: unknown) {
-                  console.warn("[api/donate/status] Error al actualizar estado en persistencia:", (updateErr as Error)?.message);
-                  record = { ...record, status: mappedStatus, wompiTransactionId: tx.id };
-                }
-              }
+          if (wompiTx.amount_in_cents && Number(wompiTx.amount_in_cents) !== record.amountInCents) {
+            console.warn(
+              `[api/donate/status] Discrepancia de importe: interna=${record.amountInCents}, Wompi=${wompiTx.amount_in_cents}`
+            );
+            return NextResponse.json(
+              {
+                error: `Discrepancia en el importe reportado por Wompi ($${Math.round(Number(wompiTx.amount_in_cents) / 100).toLocaleString("es-CO")} COP) frente al registro del servidor ($${record.amountCOP.toLocaleString("es-CO")} COP).`,
+                code: "AMOUNT_MISMATCH",
+              },
+              { status: 400 }
+            );
+          }
+
+          const mappedStatus = mapWompiStatus(wompiTx.status);
+
+          if (mappedStatus !== record.status || (wompiTx.id && !record.wompiTransactionId)) {
+            try {
+              const updated = await transactionStore.updateStatus(
+                record.reference,
+                mappedStatus,
+                wompiTx.id,
+                undefined,
+                `Estado sincronizado en tiempo real desde API Wompi (${wompiTx.status}).`
+              );
+              if (updated) record = updated;
+            } catch (updateErr: unknown) {
+              console.warn(
+                "[api/donate/status] Error al actualizar estado en persistencia:",
+                (updateErr as Error)?.message
+              );
+              record = { ...record, status: mappedStatus, wompiTransactionId: wompiTx.id };
             }
           }
-        } catch (syncErr) {
-          console.warn("[api/donate/status] Fallo al consultar API Wompi para sincronización:", syncErr);
         }
+      } catch (syncErr) {
+        console.warn("[api/donate/status] Fallo al consultar API Wompi para sincronización:", syncErr);
       }
     }
 
-    // 4. Si el registro no se encontró en el ledger pero disponemos de ID de Wompi (resiliencia cross-lambda o cold start)
-    if (!record && transactionId) {
-      if (!privateKey) {
-        console.warn("[api/donate/status] Transacción no encontrada localmente y WOMPI_PRIVATE_KEY no está configurada en el servidor.");
+    // 4. Recuperación resiliente desde API Wompi cuando el registro no existe localmente
+    // Permite verificar transacciones legítimas aun si hubo intermitencia previa de base de datos
+    if (!record && privateKey) {
+      try {
+        let wompiTx: WompiApiTransaction | undefined;
+
+        if (transactionId) {
+          const res = await fetchWompiTransactionById(transactionId, privateKey, env);
+          if (res.ok && res.data) wompiTx = res.data;
+        }
+
+        if (!wompiTx && reference) {
+          const res = await fetchWompiTransactionByReference(reference, privateKey, env);
+          if (res.ok && res.data) wompiTx = res.data;
+        }
+
+        if (wompiTx && wompiTx.reference) {
+          // Si el cliente envió referencia, verificar que coincidan
+          if (reference && reference !== wompiTx.reference) {
+            console.warn(
+              `[api/donate/status] Discrepancia en recuperación: solicitada=${reference}, Wompi=${wompiTx.reference}`
+            );
+            return NextResponse.json(
+              {
+                error: `El ID de transacción de Wompi ingresado corresponde a otra referencia (${wompiTx.reference}) y no a la referencia consultada (${reference}).`,
+                code: "REFERENCE_MISMATCH",
+                requestedReference: reference,
+                actualReference: wompiTx.reference,
+              },
+              { status: 400 }
+            );
+          }
+
+          const mappedStatus = mapWompiStatus(wompiTx.status);
+          const inferredTarget = inferTargetId(wompiTx.reference);
+
+          const recoveredRecord: TransactionRecord = {
+            reference: wompiTx.reference,
+            amountCOP: Math.round(Number(wompiTx.amount_in_cents || 0) / 100),
+            amountInCents: Number(wompiTx.amount_in_cents || 0),
+            currency: wompiTx.currency || "COP",
+            targetId: inferredTarget,
+            donorName: wompiTx.customer_data?.full_name || undefined,
+            donorEmail: wompiTx.customer_email || wompiTx.customer_data?.email || undefined,
+            status: mappedStatus,
+            wompiTransactionId: wompiTx.id,
+            createdAt: wompiTx.created_at || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            processedEventIds: [],
+            auditLogs: [
+              {
+                timestamp: new Date().toISOString(),
+                action: "RECOVERED_FROM_WOMPI_API",
+                details: `Transacción recuperada y validada directamente desde API Wompi (${wompiTx.status}).`,
+              },
+            ],
+          };
+
+          // Intentar guardar en persistencia
+          try {
+            await transactionStore.save(recoveredRecord);
+          } catch (saveErr: unknown) {
+            console.warn(
+              "[api/donate/status] Aviso: No fue posible persistir transacción recuperada en base de datos:",
+              (saveErr as Error)?.message
+            );
+          }
+
+          record = recoveredRecord;
+        }
+      } catch (recoveryErr) {
+        console.warn("[api/donate/status] Error al intentar recuperación desde Wompi:", recoveryErr);
+      }
+    }
+
+    // 5. Manejo explícito de ausencia de registro y diferenciación de fallos de base de datos
+    if (!record) {
+      // Si la consulta de base de datos falló y no fue posible verificar con Wompi:
+      // Devolver error 503 DATABASE_ERROR, NUNCA enmascarar un fallo de BD como 404
+      if (dbError && isDatabaseError(dbError)) {
         return NextResponse.json(
           {
-            error: "La transacción no se encuentra en el registro del servidor y no está configurada la llave privada (WOMPI_PRIVATE_KEY) para consultarla en Wompi.",
-            code: "MISSING_SERVER_PRIVATE_KEY",
-            environment: env,
+            error: "No fue posible verificar la transacción debido a una intermitencia temporal con la base de datos.",
+            code: "DATABASE_ERROR",
+            requestedReference: reference || undefined,
           },
-          { status: 500 }
+          { status: 503 }
         );
       }
 
-      try {
-        const apiUrl = `${wompiConfig.apiBaseUrl[env]}/transactions/${transactionId}`;
-        console.info(`[api/donate/status] Intentando recuperación en Wompi API (${env}) para txId=${transactionId.slice(0, 12)}...`);
-
-        const res = await fetch(apiUrl, {
-          headers: { Authorization: `Bearer ${privateKey}` },
-          cache: "no-store",
-        });
-
-        if (res.ok) {
-          const wompiData = await res.json();
-          const tx = wompiData?.data;
-
-          if (tx && tx.reference) {
-            // Si el cliente también envió referencia, verificar que coincidan
-            if (reference && reference !== tx.reference) {
-              console.warn(
-                `[api/donate/status] Discrepancia en recuperación: solicitada=${reference}, Wompi=${tx.reference}`
-              );
-              return NextResponse.json(
-                {
-                  error: `El ID de transacción de Wompi ingresado corresponde a otra referencia (${tx.reference}) y no a la referencia consultada (${reference}).`,
-                  code: "REFERENCE_MISMATCH",
-                  requestedReference: reference,
-                  actualReference: tx.reference,
-                },
-                { status: 400 }
-              );
-            }
-
-            const mappedStatus = mapWompiStatus(tx.status);
-
-            // Verificar si la referencia ya existe en el ledger local
-            let existingRecord: TransactionRecord | null = null;
-            try {
-              existingRecord = await transactionStore.findByReference(tx.reference);
-            } catch (dbErr: unknown) {
-              console.warn("[api/donate/status] Error al buscar referencia en persistencia:", (dbErr as Error)?.message);
-            }
-
-            if (existingRecord) {
-              if (existingRecord.status !== mappedStatus || !existingRecord.wompiTransactionId) {
-                try {
-                  const updated = await transactionStore.updateStatus(
-                    existingRecord.reference,
-                    mappedStatus,
-                    tx.id,
-                    undefined,
-                    `Estado sincronizado en tiempo real desde API Wompi (${tx.status}).`
-                  );
-                  if (updated) existingRecord = updated;
-                } catch (updateErr: unknown) {
-                  console.warn("[api/donate/status] Error al actualizar estado:", (updateErr as Error)?.message);
-                  existingRecord = { ...existingRecord, status: mappedStatus, wompiTransactionId: tx.id };
-                }
-              }
-              record = existingRecord;
-            } else {
-              let inferredTarget = "general";
-              if (tx.reference.includes("-PULSO-")) inferredTarget = "pulso";
-              else if (tx.reference.includes("-QUAKE-")) inferredTarget = "quakenet";
-              else if (tx.reference.includes("-PULSAI-")) inferredTarget = "pulsai";
-
-              const recoveredRecord: TransactionRecord = {
-                reference: tx.reference,
-                amountCOP: Math.round(Number(tx.amount_in_cents || 0) / 100),
-                amountInCents: Number(tx.amount_in_cents || 0),
-                currency: tx.currency || "COP",
-                targetId: inferredTarget,
-                donorName: tx.customer_data?.full_name || undefined,
-                donorEmail: tx.customer_data?.email || undefined,
-                status: mappedStatus,
-                wompiTransactionId: tx.id,
-                createdAt: tx.created_at || new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                processedEventIds: [],
-                auditLogs: [
-                  {
-                    timestamp: new Date().toISOString(),
-                    action: "RECOVERED_FROM_WOMPI_API",
-                    details: `Transacción recuperada directamente desde API Wompi (${tx.status}).`,
-                  },
-                ],
-              };
-
-              try {
-                await transactionStore.save(recoveredRecord);
-              } catch (saveErr: unknown) {
-                console.warn("[api/donate/status] Aviso: No fue posible persistir transacción recuperada en base de datos:", (saveErr as Error)?.message);
-              }
-              record = recoveredRecord;
-            }
-          }
-        } else if (res.status === 404) {
-          console.warn(`[api/donate/status] Wompi API (${env}) respondió 404: La transacción no existe en Wompi.`);
-          return NextResponse.json(
-            {
-              error: `La transacción no existe en Wompi ${env === "sandbox" ? "Sandbox (Pruebas)" : "Producción"}.`,
-              code: "NOT_FOUND_IN_WOMPI",
-              environment: env,
-              transactionId,
-            },
-            { status: 404 }
-          );
-        } else if (res.status === 401 || res.status === 403) {
-          console.error(`[api/donate/status] Error de autorización en Wompi API (${res.status}). Compruebe WOMPI_PRIVATE_KEY.`);
-          return NextResponse.json(
-            {
-              error: "Error de autenticación con la pasarela Wompi. Verifique las credenciales del servidor.",
-              code: "GATEWAY_AUTH_ERROR",
-              environment: env,
-            },
-            { status: 502 }
-          );
-        } else {
-          console.warn(`[api/donate/status] Wompi API respondió con código HTTP ${res.status}`);
-        }
-      } catch (recoveryErr) {
-        console.warn("[api/donate/status] Error de conexión con API Wompi:", recoveryErr);
-      }
-    }
-
-    // 5. Si después de todas las comprobaciones no se obtuvo el registro
-    if (!record) {
+      // Si la base de datos respondió correctamente y la transacción realmente no existe en ningún lado:
       if (reference) {
         return NextResponse.json(
           {
@@ -341,7 +324,7 @@ export async function GET(request: Request) {
 
     const targetInfo = wompiConfig.targets.find((t) => t.id === record.targetId);
 
-    // Devolver únicamente información segura y pública
+    // 6. Devolver únicamente información segura y pública
     return NextResponse.json({
       reference: record.reference,
       status: record.status,

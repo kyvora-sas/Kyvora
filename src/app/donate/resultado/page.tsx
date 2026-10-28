@@ -244,7 +244,9 @@ function DonationResultContent() {
                 <ShieldAlert className="w-8 h-8" />
               </div>
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-                No pudimos verificar la transacción
+                {error.code === "DATABASE_ERROR"
+                  ? "Intermitencia temporal de conexión"
+                  : "No pudimos verificar la transacción"}
               </h1>
               <p className="text-foreground-muted text-sm max-w-md mx-auto">
                 {error.message}

@@ -90,9 +90,19 @@ export async function POST(request: Request) {
     const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
     const siteUrl = isProd && isLocalOrLoopbackUrl(rawSiteUrl) ? siteConfig.url : rawSiteUrl;
     const isLocal = isLocalOrLoopbackUrl(siteUrl);
+    const sanitizedBase = siteUrl.trim().replace(/\/+$/, "");
     const redirectUrl = isLocal
       ? undefined
-      : `${siteUrl.replace(/\/+$/, "")}/donate/resultado?reference=${encodeURIComponent(reference)}`;
+      : `${sanitizedBase}/donate/resultado?reference=${encodeURIComponent(reference)}`;
+
+    console.info("[api/donate/create-transaction] Creando intención de donación:", {
+      reference,
+      targetId,
+      amountCOP: parsedAmount,
+      isProd,
+      hasPostgres: Boolean(process.env.DATABASE_URL || process.env.POSTGRES_URL),
+      hasRedirectUrl: Boolean(redirectUrl),
+    });
 
     // 7. Registro de la transacción como PENDING en almacenamiento persistente
     await transactionStore.save({

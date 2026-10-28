@@ -78,7 +78,7 @@ async function runMigration() {
 
     for (const tx of transactions) {
       const query = `
-        INSERT INTO donations (
+        INSERT INTO public.donations (
           reference,
           amount_cop,
           amount_in_cents,

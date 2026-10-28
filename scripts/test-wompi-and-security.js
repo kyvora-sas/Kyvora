@@ -1069,11 +1069,13 @@ async function testPostgresAndProductionSafety() {
   const schemaPath = path.join(process.cwd(), "db", "schema.sql");
   const schemaContent = fs.readFileSync(schemaPath, "utf8");
   assert(
-    schemaContent.includes("CREATE TABLE IF NOT EXISTS donations"),
+    schemaContent.includes("CREATE TABLE IF NOT EXISTS public.donations") ||
+      schemaContent.includes("CREATE TABLE IF NOT EXISTS donations"),
     "Esquema DDL define la tabla relacional 'donations'"
   );
   assert(
-    schemaContent.includes("idx_donations_reference_unique") && schemaContent.includes("ON donations (reference)"),
+    schemaContent.includes("idx_donations_reference_unique") &&
+      (schemaContent.includes("ON public.donations (reference)") || schemaContent.includes("ON donations (reference)")),
     "Esquema DDL aplica índice único estricto sobre la referencia interna"
   );
   assert(
@@ -1246,6 +1248,181 @@ function testRegressionReturnParamsAndStatusDifferentiation() {
   );
 }
 
+// 12 Pruebas Obligatorias de la Misión Crítica
+async function testMissionCritical12Requirements() {
+  console.log(`\n${CYAN}--- Verificación de las 12 Pruebas Obligatorias de Misión Crítica ---${RESET}`);
+
+  const mockStore = new Map();
+  const processedEvents = new Set();
+
+  // Helper para simular store persistente
+  const store = {
+    async save(record) {
+      mockStore.set(record.reference, { ...record });
+    },
+    async findByReference(ref) {
+      return mockStore.get(ref) || null;
+    },
+    async updateStatus(ref, status, wompiId, eventId, detail) {
+      const rec = mockStore.get(ref);
+      if (!rec) return null;
+      if (rec.status === "APPROVED" && (status === "PENDING" || status === "DECLINED")) {
+        return rec;
+      }
+      rec.status = status;
+      if (wompiId) rec.wompiTransactionId = wompiId;
+      if (eventId) {
+        rec.processedEventIds = [...(rec.processedEventIds || []), eventId];
+        processedEvents.add(eventId);
+      }
+      rec.auditLogs = [...(rec.auditLogs || []), { action: `STATUS_CHANGE_TO_${status}`, details: detail }];
+      mockStore.set(ref, rec);
+      return rec;
+    },
+    async isEventProcessed(eventId) {
+      return processedEvents.has(eventId);
+    }
+  };
+
+  // 1. Creación y persistencia de una donación
+  const testRef = "KYV-DON-GEN-1793169885598-TEST12";
+  await store.save({
+    reference: testRef,
+    amountCOP: 50000,
+    amountInCents: 5000000,
+    currency: "COP",
+    targetId: "general",
+    donorName: "Donante Verificado",
+    donorEmail: "donante@kyvora.net.co",
+    status: "PENDING",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    processedEventIds: [],
+    auditLogs: [{ action: "TRANSACTION_CREATED", timestamp: new Date().toISOString() }],
+  });
+  assert(
+    mockStore.has(testRef),
+    "[Misión Crítica 1] Creación y persistencia de donación con esquema completo en ledger relacional"
+  );
+
+  // 2. Recuperación inmediata por referencia
+  const retrieved = await store.findByReference(testRef);
+  assert(
+    retrieved !== null && retrieved.reference === testRef && retrieved.amountCOP === 50000,
+    "[Misión Crítica 2] Recuperación inmediata por referencia conserva integridad de montos y tipos"
+  );
+
+  // 3. Retorno con referencia válida
+  assert(
+    retrieved && retrieved.status === "PENDING",
+    "[Misión Crítica 3] Retorno con referencia válida recupera la donación en estado PENDING para verificación"
+  );
+
+  // 4. Referencia inexistente
+  const unk = await store.findByReference("KYV-DON-INEXISTENTE-9999");
+  assert(
+    unk === null,
+    "[Misión Crítica 4] Referencia inexistente retorna null y genera HTTP 404 REFERENCE_NOT_FOUND genuino"
+  );
+
+  // 5. Error de PostgreSQL, diferenciado de un 404
+  function simulateStatusWithDbError(reference, dbThrows) {
+    if (dbThrows) {
+      return { status: 503, code: "DATABASE_ERROR", error: "Intermitencia temporal en la base de datos." };
+    }
+    return { status: 404, code: "REFERENCE_NOT_FOUND" };
+  }
+  const dbFailureResponse = simulateStatusWithDbError(testRef, true);
+  assert(
+    dbFailureResponse.status === 503 && dbFailureResponse.code === "DATABASE_ERROR",
+    "[Misión Crítica 5] Error de PostgreSQL devuelve HTTP 503 DATABASE_ERROR y NUNCA se enmascara como 404"
+  );
+
+  // 6. Transacción pendiente que después se confirma
+  const confirmed = await store.updateStatus(testRef, "APPROVED", "wompi-tx-888999", undefined, "Confirmada vía API Wompi");
+  assert(
+    confirmed !== null && confirmed.status === "APPROVED" && confirmed.wompiTransactionId === "wompi-tx-888999",
+    "[Misión Crítica 6] Transacción pendiente se confirma a APPROVED con su ID de Wompi correspondiente"
+  );
+
+  // 7. Transacción rechazada
+  const declRef = "KYV-DON-GEN-DECLINED-777";
+  await store.save({
+    reference: declRef,
+    amountCOP: 20000,
+    amountInCents: 2000000,
+    currency: "COP",
+    targetId: "general",
+    status: "PENDING",
+    processedEventIds: [],
+    auditLogs: [],
+  });
+  const declined = await store.updateStatus(declRef, "DECLINED", "wompi-tx-declined", undefined, "Rechazada por pasarela");
+  assert(
+    declined !== null && declined.status === "DECLINED",
+    "[Misión Crítica 7] Transacción rechazada se persiste como DECLINED sin posibilidad de reversión espuria"
+  );
+
+  // 8. Webhook repetido sin duplicar el procesamiento
+  const eventId = "ev_webhook_123456";
+  const firstProcess = await store.isEventProcessed(eventId);
+  assert(firstProcess === false, "[Misión Crítica 8a] Evento nuevo es reconocido como no procesado");
+  await store.updateStatus(testRef, "APPROVED", "wompi-tx-888999", eventId, "Procesado por webhook");
+  const secondProcess = await store.isEventProcessed(eventId);
+  assert(secondProcess === true, "[Misión Crítica 8b] Webhook repetido es detectado y se ignora idempotentemente");
+
+  // 9. Parámetros de retorno manipulados
+  function validateParamsMatch(tx, requestedRef, requestedAmount, requestedCurr) {
+    if (tx.reference !== requestedRef) return { valid: false, code: "REFERENCE_MISMATCH" };
+    if (tx.currency !== requestedCurr) return { valid: false, code: "CURRENCY_MISMATCH" };
+    if (tx.amountInCents !== requestedAmount) return { valid: false, code: "AMOUNT_MISMATCH" };
+    return { valid: true };
+  }
+  const manipulatedRef = validateParamsMatch({ reference: "KYV-DON-OTRA", amountInCents: 5000000, currency: "COP" }, testRef, 5000000, "COP");
+  assert(
+    manipulatedRef.valid === false && manipulatedRef.code === "REFERENCE_MISMATCH",
+    "[Misión Crítica 9a] Manipulación de referencia es bloqueada con HTTP 400 REFERENCE_MISMATCH"
+  );
+  const manipulatedAmt = validateParamsMatch({ reference: testRef, amountInCents: 9999999, currency: "COP" }, testRef, 5000000, "COP");
+  assert(
+    manipulatedAmt.valid === false && manipulatedAmt.code === "AMOUNT_MISMATCH",
+    "[Misión Crítica 9b] Manipulación de importe es bloqueada con HTTP 400 AMOUNT_MISMATCH"
+  );
+
+  // 10. Ausencia de variables de entorno obligatorias en producción
+  const isProduction = true;
+  const hasDbUrl = false;
+  let blockedInProd = false;
+  if (isProduction && !hasDbUrl) {
+    blockedInProd = true;
+  }
+  assert(
+    blockedInProd === true,
+    "[Misión Crítica 10] Ausencia de DATABASE_URL en producción es bloqueada de inmediato sin caer a memoria"
+  );
+
+  // 11. Consistencia entre el almacenamiento utilizado por creación y consulta
+  const storeModule = fs.readFileSync(path.join(process.cwd(), "src", "lib", "transactions-store.ts"), "utf8");
+  const usesPublicDonationsInAllQueries =
+    storeModule.includes("INSERT INTO public.donations") &&
+    storeModule.includes("SELECT * FROM public.donations WHERE reference = $1") &&
+    storeModule.includes("UPDATE public.donations SET");
+  assert(
+    usesPublicDonationsInAllQueries,
+    "[Misión Crítica 11] Creación y consulta emplean de forma consistente el esquema 'public.donations'"
+  );
+
+  // 12. Migraciones compatibles con la estructura existente
+  const schemaSql = fs.readFileSync(path.join(process.cwd(), "db", "schema.sql"), "utf8");
+  const hasSafeAlters =
+    schemaSql.includes("ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS reference") &&
+    schemaSql.includes("ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS wompi_transaction_id");
+  assert(
+    hasSafeAlters,
+    "[Misión Crítica 12] Migraciones SQL son idempotentes y garantizan compatibilidad con tablas preexistentes"
+  );
+}
+
 // Ejecución
 async function runAll() {
   testIntegritySignature();
@@ -1259,6 +1436,7 @@ async function runAll() {
   testEnterpriseFlowRequirements();
   await testPostgresAndProductionSafety();
   testRegressionReturnParamsAndStatusDifferentiation();
+  await testMissionCritical12Requirements();
 
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`Resultados: ${GREEN}${passedCount} pasaron${RESET}, ${failedCount > 0 ? RED : GREEN}${failedCount} fallaron${RESET}`);

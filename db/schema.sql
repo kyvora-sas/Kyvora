@@ -7,7 +7,7 @@
 -- ==============================================================================
 
 -- 1. Tabla de Donaciones / Transacciones
-CREATE TABLE IF NOT EXISTS donations (
+CREATE TABLE IF NOT EXISTS public.donations (
     id BIGSERIAL PRIMARY KEY,
     
     -- Referencia única generada por KYVORA (ej. KYV-DON-GEN-1730000000000-A1B2C3D4)
@@ -44,29 +44,44 @@ CREATE TABLE IF NOT EXISTS donations (
     audit_logs JSONB NOT NULL DEFAULT '[]'::jsonb
 );
 
+-- Asegurar columnas si la tabla preexistía con esquema parcial
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS reference VARCHAR(80);
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS amount_cop INTEGER;
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS amount_in_cents BIGINT;
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'COP';
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS target_id VARCHAR(50);
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS donor_name VARCHAR(120);
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS donor_email VARCHAR(120);
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'PENDING';
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS wompi_transaction_id VARCHAR(100);
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS processed_event_ids TEXT[] DEFAULT '{}';
+ALTER TABLE public.donations ADD COLUMN IF NOT EXISTS audit_logs JSONB DEFAULT '[]'::jsonb;
+
 -- 2. Restricciones de Unicidad e Integridad
 -- La referencia interna debe ser única e irrepetible
 CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_reference_unique 
-    ON donations (reference);
+    ON public.donations (reference);
 
 -- El ID de transacción de Wompi debe ser único cuando no sea nulo (evita asociaciones cruzadas)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_wompi_tx_id_unique 
-    ON donations (wompi_transaction_id) 
+    ON public.donations (wompi_transaction_id)
     WHERE wompi_transaction_id IS NOT NULL;
 
 -- 3. Índices para Optimización de Consultas
 CREATE INDEX IF NOT EXISTS idx_donations_status 
-    ON donations (status);
+    ON public.donations (status);
 
 CREATE INDEX IF NOT EXISTS idx_donations_created_at 
-    ON donations (created_at DESC);
+    ON public.donations (created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_donations_target_id 
-    ON donations (target_id);
+    ON public.donations (target_id);
 
 -- 4. Comentarios de Documentación
-COMMENT ON TABLE donations IS 'Registro persistente de aportes voluntarios procesados vía Wompi Colombia.';
-COMMENT ON COLUMN donations.reference IS 'Identificador único emitido por el servidor de KYVORA para la pasarela.';
-COMMENT ON COLUMN donations.wompi_transaction_id IS 'Identificador oficial emitido por Wompi; previene reutilizaciones fraudulentas.';
-COMMENT ON COLUMN donations.processed_event_ids IS 'Historial de IDs de eventos de webhook procesados para garantizar idempotencia.';
-COMMENT ON COLUMN donations.audit_logs IS 'Trazabilidad de cambios de estado y respuestas recibidas de la pasarela.';
+COMMENT ON TABLE public.donations IS 'Registro persistente de aportes voluntarios procesados vía Wompi Colombia.';
+COMMENT ON COLUMN public.donations.reference IS 'Identificador único emitido por el servidor de KYVORA para la pasarela.';
+COMMENT ON COLUMN public.donations.wompi_transaction_id IS 'Identificador oficial emitido por Wompi; previene reutilizaciones fraudulentas.';
+COMMENT ON COLUMN public.donations.processed_event_ids IS 'Historial de IDs de eventos de webhook procesados para garantizar idempotencia.';
+COMMENT ON COLUMN public.donations.audit_logs IS 'Trazabilidad de cambios de estado y respuestas recibidas de la pasarela.';

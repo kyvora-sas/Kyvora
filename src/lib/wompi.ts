@@ -229,3 +229,70 @@ export function parseWompiReturnParams(
   return { reference, transactionId };
 }
 
+export interface WompiApiTransaction {
+  id: string;
+  reference: string;
+  amount_in_cents: number;
+  currency: string;
+  status: "APPROVED" | "DECLINED" | "VOIDED" | "ERROR" | "PENDING";
+  customer_email?: string;
+  created_at?: string;
+  finalized_at?: string;
+  customer_data?: {
+    full_name?: string;
+    email?: string;
+    phone_number?: string;
+  };
+}
+
+export async function fetchWompiTransactionById(
+  transactionId: string,
+  privateKey: string,
+  env: "production" | "sandbox" = "sandbox"
+): Promise<{ ok: boolean; status: number; data?: WompiApiTransaction; error?: string }> {
+  try {
+    const baseUrl = wompiConfig.apiBaseUrl[env] || wompiConfig.apiBaseUrl.sandbox;
+    const res = await fetch(`${baseUrl}/transactions/${encodeURIComponent(transactionId)}`, {
+      headers: { Authorization: `Bearer ${privateKey}` },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return { ok: false, status: res.status };
+    }
+    const json = await res.json();
+    return { ok: true, status: res.status, data: json?.data };
+  } catch (err) {
+    return { ok: false, status: 500, error: (err as Error)?.message };
+  }
+}
+
+export async function fetchWompiTransactionByReference(
+  reference: string,
+  privateKey: string,
+  env: "production" | "sandbox" = "sandbox"
+): Promise<{ ok: boolean; status: number; data?: WompiApiTransaction; error?: string }> {
+  try {
+    const baseUrl = wompiConfig.apiBaseUrl[env] || wompiConfig.apiBaseUrl.sandbox;
+    const res = await fetch(`${baseUrl}/transactions?reference=${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${privateKey}` },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return { ok: false, status: res.status };
+    }
+    const json = await res.json();
+    const list = Array.isArray(json?.data) ? json.data : [];
+    if (list.length === 0) {
+      return { ok: true, status: 200, data: undefined };
+    }
+    const sorted = [...list].sort((a: WompiApiTransaction, b: WompiApiTransaction) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
+    });
+    return { ok: true, status: 200, data: sorted[0] };
+  } catch (err) {
+    return { ok: false, status: 500, error: (err as Error)?.message };
+  }
+}
+

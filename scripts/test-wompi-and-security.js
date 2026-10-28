@@ -1024,10 +1024,12 @@ function testEnterpriseFlowRequirements() {
   assert(schemaExists, "[Escenario 19] Esquema PostgreSQL con restricciones de unicidad y auditoría creado en db/schema.sql");
 
   // 20. Migración segura de los registros históricos
-  const dataFileExists = fs.existsSync(path.join(process.cwd(), "data", "transactions.json"));
+  const dataPath = path.join(process.cwd(), "data", "transactions.json");
+  const backupPath = path.join(process.cwd(), "data", "transactions.backup.json");
+  const targetFile = fs.existsSync(dataPath) ? dataPath : (fs.existsSync(backupPath) ? backupPath : null);
   let historicalCount = 0;
-  if (dataFileExists) {
-    const raw = fs.readFileSync(path.join(process.cwd(), "data", "transactions.json"), "utf8");
+  if (targetFile) {
+    const raw = fs.readFileSync(targetFile, "utf8");
     const arr = JSON.parse(raw);
     historicalCount = arr.length;
   }

@@ -69,6 +69,20 @@ export async function POST(request: Request) {
     let record = await transactionStore.findByReference(tx.reference);
     const txId = typeof tx.id === "string" ? tx.id : undefined;
 
+    // Control de asociación cruzada: verificar que este ID de Wompi no esté asignado a otra donación
+    if (txId) {
+      const existingBound = await transactionStore.findByWompiTransactionId(txId);
+      if (existingBound && existingBound.reference !== tx.reference) {
+        console.error(
+          `[webhook/wompi] Alerta de seguridad: La transacción Wompi ${txId} ya está asociada a otra referencia (${existingBound.reference}).`
+        );
+        return NextResponse.json(
+          { error: "Conflicto de identidad: La transacción de Wompi ya pertenece a otra referencia." },
+          { status: 409 }
+        );
+      }
+    }
+
     if (!record) {
       console.info(`[webhook/wompi] Referencia ${tx.reference} no encontrada en cache local. Reconstruyendo a partir de webhook verificado.`);
       let inferredTarget = "general";
@@ -152,7 +166,22 @@ export async function POST(request: Request) {
         break;
     }
 
-    // 9. Actualización idempotente del estado y registro de auditoría
+    // 9. Protección contra eventos tardíos o desordenados (máquina de estados estricta)
+    if (record.status !== "PENDING" && (nextStatus === "PENDING" || (record.status === "APPROVED" && nextStatus === "DECLINED"))) {
+      console.info(
+        `[webhook/wompi] Evento desordenado ignorado: no se permite revertir '${record.status}' a '${nextStatus}' en ${record.reference}.`
+      );
+      await transactionStore.updateStatus(
+        record.reference,
+        record.status,
+        txId,
+        eventId,
+        `Evento tardío '${txStatus}' ignorado para preservar el estado definitivo '${record.status}'.`
+      );
+      return NextResponse.json({ received: true, note: "Estado definitivo protegido.", status: record.status }, { status: 200 });
+    }
+
+    // 10. Actualización idempotente del estado y registro de auditoría
     await transactionStore.updateStatus(
       record.reference,
       nextStatus,

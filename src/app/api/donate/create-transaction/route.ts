@@ -83,14 +83,16 @@ export async function POST(request: Request) {
     );
 
     // 6. URL de retorno tras el pago
-    // CloudFront / AWS WAF en checkout.wompi.co bloquea con 403 (regla SSRF) cualquier petición con 'localhost' o loopbacks en query params.
-    // En desarrollo local se omite redirect-url para permitir abrir el checkout de Sandbox sin bloqueo;
-    // en entornos públicos (Vercel Preview y Producción), se conserva la redirección a /donate/resultado.
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+    // En producción (Vercel o dominio público), se garantiza HTTPS y la URL canónica de KYVORA (https://www.kyvora.net.co/donate/resultado?reference=...).
+    // En desarrollo local (localhost), CloudFront / AWS WAF en checkout.wompi.co bloquea con 403 (regla SSRF) peticiones GET que incluyan loopbacks en query params.
+    // Para entornos locales se omite redirect-url en el query param para evitar el bloqueo 403; en entornos públicos HTTPS, se incluye siempre.
+    const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+    const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+    const siteUrl = isProd && isLocalOrLoopbackUrl(rawSiteUrl) ? siteConfig.url : rawSiteUrl;
     const isLocal = isLocalOrLoopbackUrl(siteUrl);
     const redirectUrl = isLocal
       ? undefined
-      : `${siteUrl}/donate/resultado?reference=${encodeURIComponent(reference)}`;
+      : `${siteUrl.replace(/\/+$/, "")}/donate/resultado?reference=${encodeURIComponent(reference)}`;
 
     // 7. Registro de la transacción como PENDING en almacenamiento persistente
     await transactionStore.save({

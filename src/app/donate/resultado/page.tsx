@@ -7,6 +7,7 @@ import Image from "next/image";
 import { CheckCircle2, Clock, XCircle, ArrowLeft, RefreshCw, ShieldAlert, HeartHandshake } from "lucide-react";
 import logoImg from "@/img/logo.png";
 import { siteConfig } from "@/config/site";
+import { parseWompiReturnParams } from "@/lib/wompi";
 
 interface TransactionStatusResponse {
   reference: string;
@@ -18,16 +19,35 @@ interface TransactionStatusResponse {
   donorName: string;
 }
 
+interface VerificationError {
+  message: string;
+  code?: string;
+  requestedReference?: string;
+  actualReference?: string;
+}
+
+function buildStatusQuery(reference: string, wompiId: string): string {
+  const params = new URLSearchParams();
+  if (reference) params.set("reference", reference);
+  if (wompiId) params.set("id", wompiId);
+  return params.toString();
+}
+
 function DonationResultContent() {
   const searchParams = useSearchParams();
-  const reference = searchParams.get("reference") || "";
-  const wompiId = searchParams.get("id") || "";
-  const hasRef = Boolean(reference || wompiId);
+  const { reference: parsedRef, transactionId: parsedId } = parseWompiReturnParams(searchParams);
+  const reference = parsedRef || "";
+  const initialWompiId = parsedId || "";
+  const hasRef = Boolean(reference || initialWompiId);
 
   const [loading, setLoading] = useState(hasRef);
   const [data, setData] = useState<TransactionStatusResponse | null>(null);
-  const [error, setError] = useState<string | null>(
-    hasRef ? null : "No se proporcionó una referencia válida de transacción."
+  const [currentWompiId, setCurrentWompiId] = useState(initialWompiId);
+  const [manualWompiId, setManualWompiId] = useState("");
+  const [pollCount, setPollCount] = useState(0);
+  const MAX_POLLS = 5;
+  const [error, setError] = useState<VerificationError | null>(
+    hasRef ? null : { message: "No se proporcionó una referencia válida de transacción." }
   );
 
   useEffect(() => {
@@ -35,28 +55,36 @@ function DonationResultContent() {
 
     let ignore = false;
 
-    const query = reference
-      ? `reference=${encodeURIComponent(reference)}`
-      : `id=${encodeURIComponent(wompiId)}`;
+    const query = buildStatusQuery(reference, initialWompiId);
 
     fetch(`/api/donate/status?${query}`, { cache: "no-store" })
       .then(async (res) => {
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
-          throw new Error(errJson.error || "No fue posible verificar el estado de la transacción en el servidor.");
+          const errObj: VerificationError = {
+            message: errJson.error || "No fue posible verificar el estado de la transacción en el servidor.",
+            code: errJson.code,
+            requestedReference: errJson.requestedReference,
+            actualReference: errJson.actualReference,
+          };
+          throw errObj;
         }
         return res.json();
       })
       .then((statusData) => {
         if (!ignore) {
           setData(statusData);
+          setError(null);
           setLoading(false);
         }
       })
       .catch((err: unknown) => {
         if (!ignore) {
-          const msg = err instanceof Error ? err.message : "Error al verificar la transacción.";
-          setError(msg);
+          if (err && typeof err === "object" && "message" in err) {
+            setError(err as VerificationError);
+          } else {
+            setError({ message: "Error al verificar la transacción." });
+          }
           setLoading(false);
         }
       });
@@ -64,29 +92,66 @@ function DonationResultContent() {
     return () => {
       ignore = true;
     };
-  }, [reference, wompiId, hasRef]);
+  }, [reference, initialWompiId, hasRef]);
 
-  const fetchStatus = () => {
+  // Actualización automática limitada para transacciones en estado PENDING
+  useEffect(() => {
+    if (data?.status !== "PENDING" || pollCount >= MAX_POLLS) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const activeId = currentWompiId || initialWompiId;
+      const query = buildStatusQuery(reference, activeId);
+
+      fetch(`/api/donate/status?${query}`, { cache: "no-store" })
+        .then(async (res) => {
+          if (!res.ok) return;
+          const statusData = await res.json();
+          setData(statusData);
+          setPollCount((prev) => prev + 1);
+        })
+        .catch(() => {
+          setPollCount((prev) => prev + 1);
+        });
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [data?.status, pollCount, reference, currentWompiId, initialWompiId]);
+
+  const fetchStatus = (overrideId?: string) => {
     setLoading(true);
     setError(null);
-    const query = reference
-      ? `reference=${encodeURIComponent(reference)}`
-      : `id=${encodeURIComponent(wompiId)}`;
+    const activeId = overrideId !== undefined ? overrideId : currentWompiId;
+    const query = buildStatusQuery(reference, activeId);
 
     fetch(`/api/donate/status?${query}`, { cache: "no-store" })
       .then(async (res) => {
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
-          throw new Error(errJson.error || "No fue posible verificar el estado de la transacción en el servidor.");
+          const errObj: VerificationError = {
+            message: errJson.error || "No fue posible verificar el estado de la transacción en el servidor.",
+            code: errJson.code,
+            requestedReference: errJson.requestedReference,
+            actualReference: errJson.actualReference,
+          };
+          throw errObj;
         }
         return res.json();
       })
       .then((statusData) => {
         setData(statusData);
+        setError(null);
+        if (overrideId) {
+          setCurrentWompiId(overrideId);
+        }
       })
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "Error al verificar la transacción.";
-        setError(msg);
+        if (err && typeof err === "object" && "message" in err) {
+          setError(err as VerificationError);
+        } else {
+          setError({ message: "Error al verificar la transacción." });
+        }
       })
       .finally(() => {
         setLoading(false);
@@ -126,32 +191,110 @@ function DonationResultContent() {
             </p>
           </div>
         ) : error ? (
-          <div className="bg-surface p-8 md:p-12 rounded-2xl border border-red-500/20 text-center space-y-6">
-            <div className="w-16 h-16 mx-auto rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
-              <ShieldAlert className="w-8 h-8" />
+          error.code === "REFERENCE_MISMATCH" && error.actualReference ? (
+            <div className="bg-surface p-8 md:p-12 rounded-2xl border border-amber-500/30 text-center space-y-6">
+              <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <ShieldAlert className="w-9 h-9" />
+              </div>
+              <div className="space-y-2">
+                <span className="text-xs font-mono uppercase tracking-widest text-amber-400">
+                  Discrepancia de Referencia
+                </span>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+                  El ID de Wompi pertenece a otra donación
+                </h1>
+              </div>
+              <p className="text-foreground-muted text-sm max-w-lg mx-auto leading-relaxed">
+                {error.message}
+              </p>
+
+              <div className="bg-background/80 p-5 rounded-xl border border-white/5 text-left text-xs sm:text-sm space-y-2 font-mono max-w-lg mx-auto">
+                <div className="flex flex-col sm:flex-row justify-between border-b border-white/5 pb-2 gap-1">
+                  <span className="text-foreground-muted">Referencia en pantalla:</span>
+                  <span className="text-white font-medium">{error.requestedReference || reference}</span>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-between gap-1 pt-1">
+                  <span className="text-foreground-muted">Referencia pagada en Wompi:</span>
+                  <span className="text-emerald-400 font-bold">{error.actualReference}</span>
+                </div>
+              </div>
+
+              <div className="pt-4 flex flex-col sm:flex-row justify-center gap-4">
+                <Link
+                  href={`/donate/resultado?reference=${encodeURIComponent(error.actualReference)}&id=${encodeURIComponent(manualWompiId || currentWompiId)}`}
+                  className="px-6 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>Verificar referencia pagada ({error.actualReference.slice(0, 18)}...)</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setManualWompiId("");
+                    fetchStatus("");
+                  }}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors flex items-center justify-center"
+                >
+                  <span>Reintentar con otro ID</span>
+                </button>
+              </div>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-              No pudimos verificar la transacción
-            </h1>
-            <p className="text-foreground-muted text-sm max-w-md mx-auto">
-              {error}
-            </p>
-            <div className="pt-4 flex flex-col sm:flex-row justify-center gap-4">
-              <button
-                onClick={fetchStatus}
-                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>Reintentar verificación</span>
-              </button>
-              <Link
-                href="/#contacto"
-                className="px-6 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center"
-              >
-                Contactar soporte
-              </Link>
+          ) : (
+            <div className="bg-surface p-8 md:p-12 rounded-2xl border border-red-500/20 text-center space-y-6">
+              <div className="w-16 h-16 mx-auto rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+                No pudimos verificar la transacción
+              </h1>
+              <p className="text-foreground-muted text-sm max-w-md mx-auto">
+                {error.message}
+              </p>
+
+              {/* Sincronización manual en caso de error de búsqueda */}
+              <div className="mt-4 pt-4 border-t border-white/5 text-left text-xs text-foreground-muted space-y-3 max-w-md mx-auto">
+                <p className="font-semibold text-white/90 text-center">
+                  ¿Realizaste el pago y dispones del ID de transacción de Wompi?
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={manualWompiId}
+                    onChange={(e) => setManualWompiId(e.target.value.trim())}
+                    placeholder="ID de Wompi (ej. 12238322-1793154198-31335)"
+                    className="flex-1 px-3 py-2 bg-background border border-white/10 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[var(--color-accent)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (manualWompiId) {
+                        fetchStatus(manualWompiId);
+                      }
+                    }}
+                    disabled={!manualWompiId}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  >
+                    Verificar ID
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row justify-center gap-4">
+                <button
+                  onClick={() => fetchStatus()}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Reintentar verificación</span>
+                </button>
+                <Link
+                  href="/#contacto"
+                  className="px-6 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center"
+                >
+                  Contactar soporte
+                </Link>
+              </div>
             </div>
-          </div>
+          )
         ) : data?.status === "APPROVED" ? (
           <div className="bg-surface p-8 md:p-12 rounded-2xl border border-emerald-500/30 text-center space-y-6">
             <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
@@ -231,9 +374,26 @@ function DonationResultContent() {
               </div>
             </div>
 
-            <div className="pt-4 flex flex-col sm:flex-row justify-center gap-4">
+            {/* Indicador de comprobación automática y advertencia para no repetir el pago */}
+            <div className="space-y-3 pt-1">
+              {pollCount < MAX_POLLS ? (
+                <div className="flex items-center justify-center gap-2 text-xs font-mono text-[var(--color-accent-cyan)] bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 py-1.5 px-3 rounded-full w-fit mx-auto">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Comprobando confirmación oficial... (Intento {pollCount + 1}/{MAX_POLLS})</span>
+                </div>
+              ) : (
+                <div className="text-xs text-foreground-muted font-mono bg-white/5 py-1 px-3 rounded-full w-fit mx-auto">
+                  Comprobación automática pausada. Pulsa «Actualizar estado» para reintentar.
+                </div>
+              )}
+              <p className="text-amber-400/90 text-xs font-medium bg-amber-500/10 border border-amber-500/20 py-2.5 px-4 rounded-lg max-w-md mx-auto leading-relaxed">
+                ⚠️ Por favor, no repitas el aporte mientras la entidad bancaria o pasarela procesa la transacción.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row justify-center gap-4">
               <button
-                onClick={fetchStatus}
+                onClick={() => fetchStatus()}
                 className="px-6 py-3 bg-amber-500 text-black font-semibold rounded-lg text-sm hover:bg-amber-400 transition-colors flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -245,6 +405,37 @@ function DonationResultContent() {
               >
                 Volver al inicio
               </Link>
+            </div>
+
+            {/* Sincronización con ID de Wompi para comprobación inmediata */}
+            <div className="mt-6 pt-6 border-t border-white/5 text-left text-xs text-foreground-muted space-y-3">
+              <p className="font-semibold text-white/90">
+                ¿Completaste el pago en el checkout de Wompi?
+              </p>
+              <p>
+                Si dispones del ID de transacción de Wompi (indicado en el comprobante en pantalla o en tu panel), puedes ingresarlo para sincronizar la confirmación oficial de forma inmediata:
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={manualWompiId}
+                  onChange={(e) => setManualWompiId(e.target.value.trim())}
+                  placeholder="ID de Wompi (ej. 179315-1234567890-12345)"
+                  className="flex-1 px-3 py-2 bg-background border border-white/10 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[var(--color-accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (manualWompiId) {
+                      fetchStatus(manualWompiId);
+                    }
+                  }}
+                  disabled={!manualWompiId}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                >
+                  Sincronizar ID
+                </button>
+              </div>
             </div>
           </div>
         ) : (

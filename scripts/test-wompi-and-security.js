@@ -31,21 +31,20 @@ console.log(`${CYAN}====================================================${RESET}
 // 1. Algoritmo Oficial de Firma de Integridad Wompi (SHA-256)
 function testIntegritySignature() {
   const reference = "KYV-DON-PULSO-1730000000-ABCD";
-  const amountInCents = 5000000; // 50.000 COP
+  const amountInCents = 1000000; // 1.000.000 centavos = $10.000 COP
   const currency = "COP";
-  const integritySecret = "test_integrity_testsecret123456789";
+  const mockIntegritySecret = "test_integrity_testsecret123456789";
 
-  const stringToSign = `${reference}${amountInCents}${currency}${integritySecret}`;
+  const stringToSign = `${reference}${amountInCents}${currency}${mockIntegritySecret}`;
   const expectedHash = crypto.createHash("sha256").update(stringToSign, "utf8").digest("hex");
 
   assert(
     expectedHash.length === 64,
-    "Firma de integridad genera un hash SHA-256 hexadecimal válido de 64 caracteres",
-    expectedHash
+    "Firma de integridad genera un hash SHA-256 hexadecimal válido de 64 caracteres"
   );
 
   // Alteración de importe debe generar firma diferente
-  const alteredStringToSign = `${reference}${9999999}${currency}${integritySecret}`;
+  const alteredStringToSign = `${reference}${9999999}${currency}${mockIntegritySecret}`;
   const alteredHash = crypto.createHash("sha256").update(alteredStringToSign, "utf8").digest("hex");
   assert(
     expectedHash !== alteredHash,
@@ -115,7 +114,7 @@ function testWebhookChecksumVerification() {
 
   // Prueba: Firma inválida (Payload alterado con estatus falso)
   const tamperedPayload = JSON.parse(JSON.stringify(validPayload));
-  tamperedPayload.data.transaction.status = "DECLINED"; // Alterado sin recalcular firma
+  tamperedPayload.data.transaction.status = "DECLINED";
   assert(
     verifyChecksum(tamperedPayload, eventsSecret) === false,
     "Firma inválida rechazada (Detección de alteración maliciosa en el payload)"
@@ -145,7 +144,6 @@ function testIdempotencyAndStateLedger() {
 
   function processWebhookEvent(event) {
     const eventId = event.data.transaction.id;
-    // Idempotencia: Si ya fue procesado
     if (processedEvents.has(eventId)) {
       return { status: 200, note: "IDEMPOTENT_IGNORED" };
     }
@@ -153,7 +151,6 @@ function testIdempotencyAndStateLedger() {
     const tx = event.data.transaction;
     let record = transactions.get(tx.reference);
     
-    // Si no existe pero el evento está verificado, reconstrucción de resiliencia
     if (!record) {
       record = {
         reference: tx.reference,
@@ -165,7 +162,6 @@ function testIdempotencyAndStateLedger() {
       transactions.set(tx.reference, record);
     }
 
-    // Validación de moneda e importe
     if (tx.currency !== record.currency) {
       record.status = "ERROR";
       return { status: 400, error: "CURRENCY_MISMATCH" };
@@ -175,7 +171,6 @@ function testIdempotencyAndStateLedger() {
       return { status: 400, error: "AMOUNT_MISMATCH" };
     }
 
-    // Transición de estado
     record.status = tx.status;
     processedEvents.add(eventId);
     return { status: 200, updatedStatus: record.status };
@@ -222,7 +217,7 @@ function testIdempotencyAndStateLedger() {
       transaction: {
         id: "evt-002",
         reference: fakeAmountRef,
-        amount_in_cents: 1000, // Menor importe manipulado
+        amount_in_cents: 1000,
         currency: "COP",
         status: "APPROVED",
       },
@@ -285,8 +280,7 @@ function testSemanticReferenceGeneration() {
     const regex = new RegExp(`^KYV-DON-${t.expectedTag}-\\d+-[A-F0-9]{8}$`);
     assert(
       regex.test(ref),
-      `Referencia semántica para '${t.id}' cumple formato oficial (KYV-DON-${t.expectedTag}-...)`,
-      ref
+      `Referencia semántica para '${t.id}' cumple formato oficial (KYV-DON-${t.expectedTag}-...)`
     );
   }
 }
@@ -313,6 +307,236 @@ function testWompiStatusMapping() {
   assert(mapStatus("UNKNOWN_CODE") === "PENDING", "Mapeo de seguridad: Estado desconocido queda como PENDING");
 }
 
+// 7. Construcción de Checkout URL, Consistencia de Parámetros y Detección de Riesgo WAF
+function testCheckoutUrlBuildingAndParameterConsistency() {
+  const reference = "KYV-DON-PULSO-1730000000-TEST";
+  const amountCOP = 10000;
+  const amountInCents = amountCOP * 100; // 1.000.000 centavos
+  const currency = "COP";
+  const mockPublicKey = "pub_test_MockKey123456789";
+  const mockIntegritySecret = "test_integrity_mockSecret987654";
+
+  // Cálculo en servidor
+  const stringToSign = `${reference}${amountInCents}${currency}${mockIntegritySecret}`;
+  const signature = crypto.createHash("sha256").update(stringToSign, "utf8").digest("hex");
+
+  // Construcción de Checkout URL
+  function buildCheckoutUrl(params) {
+    const query = new URLSearchParams({
+      "public-key": params.publicKey,
+      currency: params.currency,
+      "amount-in-cents": params.amountInCents.toString(),
+      reference: params.reference,
+      "signature:integrity": params.signature,
+    });
+
+    if (params.redirectUrl) {
+      query.set("redirect-url", params.redirectUrl);
+    }
+    if (params.customerData?.email) {
+      query.set("customer-data:email", params.customerData.email);
+    }
+    if (params.customerData?.fullName) {
+      query.set("customer-data:full-name", params.customerData.fullName);
+    }
+    if (params.customerData?.phoneNumber) {
+      query.set("customer-data:phone-number", params.customerData.phoneNumber);
+    }
+
+    return `https://checkout.wompi.co/p/?${query.toString()}`;
+  }
+
+  const generatedUrl = buildCheckoutUrl({
+    publicKey: mockPublicKey,
+    reference,
+    amountInCents,
+    currency,
+    signature,
+    redirectUrl: "https://www.kyvora.net.co/donate/resultado?reference=" + encodeURIComponent(reference),
+    customerData: {
+      email: "donante@kyvora.net.co",
+      fullName: "Donante Test",
+    },
+  });
+
+  const parsedUrl = new URL(generatedUrl);
+  const q = parsedUrl.searchParams;
+
+  // Verificación de correspondencia exacta 1:1 entre firma y query params
+  assert(
+    q.get("amount-in-cents") === amountInCents.toString(),
+    "amount-in-cents en URL coincide con el valor usado en el cálculo SHA-256 (1.000.000)"
+  );
+  assert(
+    q.get("reference") === reference,
+    "reference en URL coincide exactamente con la referencia firmada"
+  );
+  assert(
+    q.get("currency") === currency,
+    "currency en URL coincide con la moneda firmada (COP)"
+  );
+  assert(
+    q.get("public-key") === mockPublicKey,
+    "public-key en URL coincide con la clave pública configurada"
+  );
+  assert(
+    q.get("signature:integrity") === signature,
+    "signature:integrity en URL coincide exactamente con el hash SHA-256 calculado"
+  );
+
+  // Verificación de nombres de parámetros oficiales
+  const expectedParams = [
+    "public-key",
+    "currency",
+    "amount-in-cents",
+    "reference",
+    "signature:integrity",
+    "redirect-url",
+    "customer-data:email",
+    "customer-data:full-name",
+  ];
+  const allParamsPresent = expectedParams.every((p) => q.has(p));
+  assert(
+    allParamsPresent,
+    "Todos los nombres de parámetros requeridos y opcionales cumplen la especificación oficial de Wompi"
+  );
+
+  // Detección robusta de hosts locales mediante URL.hostname
+  function isLocalOrLoopbackUrl(urlStr) {
+    try {
+      const parsed = new URL(urlStr);
+      const hostname = parsed.hostname.toLowerCase();
+      if (hostname === "localhost" || hostname.endsWith(".localhost")) return true;
+      if (hostname.startsWith("127.")) return true;
+      if (
+        hostname === "::1" ||
+        hostname === "[::1]" ||
+        hostname === "0:0:0:0:0:0:0:1" ||
+        hostname === "[0:0:0:0:0:0:0:1]"
+      ) {
+        return true;
+      }
+      if (hostname === "0.0.0.0") return true;
+      return false;
+    } catch {
+      return true;
+    }
+  }
+
+  // Pruebas específicas de detección de hosts locales (Requisito 6)
+  assert(
+    isLocalOrLoopbackUrl("http://localhost:3000") === true,
+    "Host local detectado: 'http://localhost:3000' es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("http://sub.localhost:8080") === true,
+    "Host local detectado: subdominio de '.localhost' es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("http://127.0.0.1:3000") === true,
+    "IPv4 loopback detectado: 'http://127.0.0.1:3000' es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("http://127.0.0.2:8000") === true,
+    "IPv4 loopback detectado: rango 127.x.x.x es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("http://[::1]:3000") === true,
+    "IPv6 loopback detectado: 'http://[::1]:3000' es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("http://[0:0:0:0:0:0:0:1]:3000") === true,
+    "IPv6 loopback detectado: '[0:0:0:0:0:0:0:1]' es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("https://www.kyvora.net.co/donate/resultado") === false,
+    "Dominio público HTTPS detectado: 'https://www.kyvora.net.co' NO es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("https://web-kyvora-git-preview.vercel.app") === false,
+    "Dominio Vercel Preview detectado: subdominio vercel.app NO es clasificado como local"
+  );
+  assert(
+    isLocalOrLoopbackUrl("https://kyvora.loca.lt") === false,
+    "Túnel de desarrollo detectado: 'https://kyvora.loca.lt' NO es clasificado como local"
+  );
+
+  // Prueba de conservación de parámetros cuando redirectUrl se omite (Entorno Local)
+  const localCheckoutUrl = buildCheckoutUrl({
+    publicKey: mockPublicKey,
+    reference,
+    amountInCents,
+    currency,
+    signature,
+    redirectUrl: undefined, // Omitido en local para evitar 403 de CloudFront
+    customerData: {
+      email: "donante@kyvora.net.co",
+      fullName: "Donante Test",
+    },
+  });
+
+  const parsedLocalUrl = new URL(localCheckoutUrl);
+  assert(
+    parsedLocalUrl.searchParams.has("redirect-url") === false,
+    "En entorno local: 'redirect-url' es omitido completamente de la URL"
+  );
+  assert(
+    parsedLocalUrl.searchParams.get("public-key") === mockPublicKey,
+    "En entorno local: 'public-key' permanece intacto"
+  );
+  assert(
+    parsedLocalUrl.searchParams.get("currency") === "COP",
+    "En entorno local: 'currency' permanece intacto"
+  );
+  assert(
+    parsedLocalUrl.searchParams.get("amount-in-cents") === "1000000",
+    "En entorno local: 'amount-in-cents' permanece intacto"
+  );
+  assert(
+    parsedLocalUrl.searchParams.get("reference") === reference,
+    "En entorno local: 'reference' permanece intacto"
+  );
+  assert(
+    parsedLocalUrl.searchParams.get("signature:integrity") === signature,
+    "En entorno local: 'signature:integrity' permanece intacto"
+  );
+  assert(
+    parsedLocalUrl.searchParams.get("customer-data:email") === "donante@kyvora.net.co",
+    "En entorno local: 'customer-data:email' permanece intacto"
+  );
+  assert(
+    parsedLocalUrl.searchParams.get("customer-data:full-name") === "Donante Test",
+    "En entorno local: 'customer-data:full-name' permanece intacto"
+  );
+
+  // Prueba en entorno público HTTPS (Vercel Preview y Producción)
+  const prodRedirectUrl = "https://www.kyvora.net.co/donate/resultado?reference=" + encodeURIComponent(reference);
+  const prodCheckoutUrl = buildCheckoutUrl({
+    publicKey: mockPublicKey,
+    reference,
+    amountInCents,
+    currency,
+    signature,
+    redirectUrl: prodRedirectUrl,
+    customerData: {
+      email: "donante@kyvora.net.co",
+      fullName: "Donante Test",
+    },
+  });
+
+  const parsedProdUrl = new URL(prodCheckoutUrl);
+  assert(
+    parsedProdUrl.searchParams.get("redirect-url") === prodRedirectUrl,
+    "En entorno público: 'redirect-url' se conserva y apunta a /donate/resultado"
+  );
+  assert(
+    parsedProdUrl.searchParams.get("public-key") === mockPublicKey &&
+    parsedProdUrl.searchParams.get("amount-in-cents") === "1000000" &&
+    parsedProdUrl.searchParams.get("signature:integrity") === signature,
+    "En entorno público: todos los demás parámetros permanecen íntegros"
+  );
+}
+
 // Ejecución
 testIntegritySignature();
 testWebhookChecksumVerification();
@@ -320,6 +544,7 @@ testIdempotencyAndStateLedger();
 testAmountLimits();
 testSemanticReferenceGeneration();
 testWompiStatusMapping();
+testCheckoutUrlBuildingAndParameterConsistency();
 
 console.log(`\n${CYAN}====================================================${RESET}`);
 console.log(`Resultados: ${GREEN}${passedCount} pasaron${RESET}, ${failedCount > 0 ? RED : GREEN}${failedCount} fallaron${RESET}`);

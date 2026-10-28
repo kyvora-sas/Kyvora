@@ -110,7 +110,51 @@ export function verifyWebhookChecksum(
 }
 
 /**
+ * Determina si una URL apunta a un entorno local o loopback mediante URL.hostname.
+ * AWS WAF en CloudFront (checkout.wompi.co) bloquea con error 403 (regla SSRF)
+ * peticiones GET cuyos query parameters contengan hosts locales.
+ */
+export function isLocalOrLoopbackUrl(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // 1. localhost exacto o cualquier subdominio de .localhost (RFC 6761)
+    if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+      return true;
+    }
+
+    // 2. IPv4 loopback (rango 127.0.0.0/8: 127.0.0.1 hasta 127.255.255.255)
+    if (hostname.startsWith("127.")) {
+      return true;
+    }
+
+    // 3. IPv6 loopback (::1, [::1], 0:0:0:0:0:0:0:1)
+    if (
+      hostname === "::1" ||
+      hostname === "[::1]" ||
+      hostname === "0:0:0:0:0:0:0:1" ||
+      hostname === "[0:0:0:0:0:0:0:1]"
+    ) {
+      return true;
+    }
+
+    // 4. IP 0.0.0.0
+    if (hostname === "0.0.0.0") {
+      return true;
+    }
+
+    return false;
+  } catch {
+    // Si la cadena no es una URL parseable válida, se asume insegura
+    return true;
+  }
+}
+
+/**
  * Construye la URL de redirección al Checkout Web alojado de Wompi.
+ * Si redirectUrl no se suministra (por ejemplo, en desarrollo local para evitar el bloqueo 403 de CloudFront WAF),
+ * el parámetro redirect-url se omite limpiamente.
  */
 export function buildWompiCheckoutUrl(params: {
   publicKey: string;
@@ -118,7 +162,7 @@ export function buildWompiCheckoutUrl(params: {
   amountInCents: number;
   currency: string;
   signature: string;
-  redirectUrl: string;
+  redirectUrl?: string;
   customerData?: {
     email?: string;
     fullName?: string;
@@ -131,8 +175,11 @@ export function buildWompiCheckoutUrl(params: {
     "amount-in-cents": params.amountInCents.toString(),
     reference: params.reference,
     "signature:integrity": params.signature,
-    "redirect-url": params.redirectUrl,
   });
+
+  if (params.redirectUrl) {
+    query.set("redirect-url", params.redirectUrl);
+  }
 
   if (params.customerData?.email) {
     query.set("customer-data:email", params.customerData.email);

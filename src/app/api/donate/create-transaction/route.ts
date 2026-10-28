@@ -6,6 +6,7 @@ import {
   copToCents,
   calculateIntegritySignature,
   buildWompiCheckoutUrl,
+  isLocalOrLoopbackUrl,
 } from "@/lib/wompi";
 import { transactionStore } from "@/lib/transactions-store";
 
@@ -82,8 +83,14 @@ export async function POST(request: Request) {
     );
 
     // 6. URL de retorno tras el pago
+    // CloudFront / AWS WAF en checkout.wompi.co bloquea con 403 (regla SSRF) cualquier petición con 'localhost' o loopbacks en query params.
+    // En desarrollo local se omite redirect-url para permitir abrir el checkout de Sandbox sin bloqueo;
+    // en entornos públicos (Vercel Preview y Producción), se conserva la redirección a /donate/resultado.
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
-    const redirectUrl = `${siteUrl}/donate/resultado?reference=${encodeURIComponent(reference)}`;
+    const isLocal = isLocalOrLoopbackUrl(siteUrl);
+    const redirectUrl = isLocal
+      ? undefined
+      : `${siteUrl}/donate/resultado?reference=${encodeURIComponent(reference)}`;
 
     // 7. Registro de la transacción como PENDING en almacenamiento persistente
     await transactionStore.save({

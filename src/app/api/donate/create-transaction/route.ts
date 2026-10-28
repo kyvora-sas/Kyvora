@@ -44,28 +44,30 @@ export async function POST(request: Request) {
     }
 
     // 3. Generación de referencia única e importe en centavos
-    const reference = generateReference("KYV-DON");
+    const targetTag =
+      targetId === "pulso"
+        ? "PULSO"
+        : targetId === "quakenet"
+        ? "QUAKE"
+        : targetId === "pulsai"
+        ? "PULSAI"
+        : "GEN";
+    const reference = generateReference(`KYV-DON-${targetTag}`);
     const amountInCents = copToCents(parsedAmount);
     const currency = wompiConfig.currency;
 
-    // 4. Clave pública y secreto de integridad
-    const publicKey =
-      process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY ||
-      (process.env.WOMPI_ENVIRONMENT === "production"
-        ? ""
-        : "pub_test_Q5yDA9xoK1Jy1801v2s7tK37xG7b2e9B"); // Clave sandbox estándar fallback para desarrollo
+    // 4. Clave pública y secreto de integridad desde variables de entorno estrictas
+    const publicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
+    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET;
 
-    const integritySecret =
-      process.env.WOMPI_INTEGRITY_SECRET ||
-      (process.env.WOMPI_ENVIRONMENT === "production"
-        ? ""
-        : "test_integrity_456def789abc123xyz456def789abc"); // Sandbox fallback
-
-    if (!publicKey) {
+    if (!publicKey || !integritySecret) {
+      console.error(
+        "[api/donate/create-transaction] Faltan variables de entorno: NEXT_PUBLIC_WOMPI_PUBLIC_KEY o WOMPI_INTEGRITY_SECRET no están definidas."
+      );
       return NextResponse.json(
         {
           error:
-            "La pasarela de pagos no está configurada (Falta NEXT_PUBLIC_WOMPI_PUBLIC_KEY en variables de entorno).",
+            "La pasarela de pagos no está configurada en el servidor (Se requieren NEXT_PUBLIC_WOMPI_PUBLIC_KEY y WOMPI_INTEGRITY_SECRET en las variables de entorno).",
         },
         { status: 500 }
       );

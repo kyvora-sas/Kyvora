@@ -30,7 +30,7 @@ console.log(`${CYAN}====================================================${RESET}
 
 // 1. Algoritmo Oficial de Firma de Integridad Wompi (SHA-256)
 function testIntegritySignature() {
-  const reference = "KYV-DON-TEST-001";
+  const reference = "KYV-DON-PULSO-1730000000-ABCD";
   const amountInCents = 5000000; // 50.000 COP
   const currency = "COP";
   const integritySecret = "test_integrity_testsecret123456789";
@@ -53,7 +53,7 @@ function testIntegritySignature() {
   );
 }
 
-// 2. Verificación de Checksum de Eventos Webhook de Wompi
+// 2. Verificación de Checksum de Eventos Webhook de Wompi con Timing Safe Equal
 function testWebhookChecksumVerification() {
   const eventsSecret = "test_events_secret987654321";
   const timestamp = 1730000000;
@@ -67,12 +67,13 @@ function testWebhookChecksumVerification() {
 
   const validPayload = {
     event: "transaction.updated",
+    environment: "test",
     data: {
       transaction: {
         id: transactionId,
         status: status,
         amount_in_cents: amountInCents,
-        reference: "KYV-DON-TEST-002",
+        reference: "KYV-DON-QUAKE-1730000000-EF12",
         currency: "COP",
       },
     },
@@ -100,13 +101,16 @@ function testWebhookChecksumVerification() {
     cat += String(payload.timestamp);
     cat += secret;
     const computed = crypto.createHash("sha256").update(cat, "utf8").digest("hex");
-    return computed === payload.signature.checksum;
+    
+    // Comparación segura en tiempo constante
+    if (computed.length !== payload.signature.checksum.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(payload.signature.checksum));
   }
 
   // Prueba: Firma válida
   assert(
     verifyChecksum(validPayload, eventsSecret) === true,
-    "Autenticación exitosa de webhook legítimo de Wompi con checksum correcto"
+    "Autenticación exitosa de webhook legítimo de Wompi con checksum correcto (timing-safe)"
   );
 
   // Prueba: Firma inválida (Payload alterado con estatus falso)
@@ -129,8 +133,8 @@ function testIdempotencyAndStateLedger() {
   const processedEvents = new Set();
   const transactions = new Map();
 
-  // Crear transacción PENDING inicial
-  const reference = "KYV-DON-TEST-003";
+  // Crear transacción PENDING inicial con prefijo semántico
+  const reference = "KYV-DON-PULSAI-1730000000-9876";
   transactions.set(reference, {
     reference,
     amountCOP: 100000,
@@ -147,9 +151,18 @@ function testIdempotencyAndStateLedger() {
     }
 
     const tx = event.data.transaction;
-    const record = transactions.get(tx.reference);
+    let record = transactions.get(tx.reference);
+    
+    // Si no existe pero el evento está verificado, reconstrucción de resiliencia
     if (!record) {
-      return { status: 404, error: "REFERENCE_NOT_FOUND" };
+      record = {
+        reference: tx.reference,
+        amountCOP: Math.round(tx.amount_in_cents / 100),
+        amountInCents: tx.amount_in_cents,
+        currency: tx.currency,
+        status: "PENDING",
+      };
+      transactions.set(tx.reference, record);
     }
 
     // Validación de moneda e importe
@@ -195,7 +208,7 @@ function testIdempotencyAndStateLedger() {
   );
 
   // Importe distinto del esperado
-  const fakeAmountRef = "KYV-DON-TEST-004";
+  const fakeAmountRef = "KYV-DON-GEN-1730000000-5555";
   transactions.set(fakeAmountRef, {
     reference: fakeAmountRef,
     amountCOP: 50000,
@@ -209,7 +222,7 @@ function testIdempotencyAndStateLedger() {
       transaction: {
         id: "evt-002",
         reference: fakeAmountRef,
-        amount_in_cents: 1000, // Menor importe
+        amount_in_cents: 1000, // Menor importe manipulado
         currency: "COP",
         status: "APPROVED",
       },
@@ -219,24 +232,6 @@ function testIdempotencyAndStateLedger() {
   assert(
     res3.status === 400 && res3.error === "AMOUNT_MISMATCH",
     "Importe distinto del esperado rechazado con alerta de seguridad"
-  );
-
-  // Referencia no encontrada
-  const nonExistentEvent = {
-    data: {
-      transaction: {
-        id: "evt-003",
-        reference: "REFERENCIA_INVENTADA_999",
-        amount_in_cents: 5000000,
-        currency: "COP",
-        status: "APPROVED",
-      },
-    },
-  };
-  const res4 = processWebhookEvent(nonExistentEvent);
-  assert(
-    res4.status === 404 && res4.error === "REFERENCE_NOT_FOUND",
-    "Referencia inexistente rechazada con código 404"
   );
 }
 
@@ -269,11 +264,62 @@ function testAmountLimits() {
   );
 }
 
+// 5. Generación Semántica de Referencias de Aporte
+function testSemanticReferenceGeneration() {
+  function generateReference(prefix) {
+    const timestamp = Date.now();
+    const random = crypto.randomBytes(4).toString("hex").toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  const targets = [
+    { id: "pulso", expectedTag: "PULSO" },
+    { id: "quakenet", expectedTag: "QUAKE" },
+    { id: "pulsai", expectedTag: "PULSAI" },
+    { id: "general", expectedTag: "GEN" },
+  ];
+
+  for (const t of targets) {
+    const tag = t.id === "pulso" ? "PULSO" : t.id === "quakenet" ? "QUAKE" : t.id === "pulsai" ? "PULSAI" : "GEN";
+    const ref = generateReference(`KYV-DON-${tag}`);
+    const regex = new RegExp(`^KYV-DON-${t.expectedTag}-\\d+-[A-F0-9]{8}$`);
+    assert(
+      regex.test(ref),
+      `Referencia semántica para '${t.id}' cumple formato oficial (KYV-DON-${t.expectedTag}-...)`,
+      ref
+    );
+  }
+}
+
+// 6. Mapeo Canónico de Estados de Transacción Wompi
+function testWompiStatusMapping() {
+  const mapStatus = (wompiStatus) => {
+    switch (wompiStatus) {
+      case "APPROVED": return "APPROVED";
+      case "DECLINED": return "DECLINED";
+      case "VOIDED": return "VOIDED";
+      case "ERROR": return "ERROR";
+      case "PENDING":
+      default:
+        return "PENDING";
+    }
+  };
+
+  assert(mapStatus("APPROVED") === "APPROVED", "Mapeo canónico: APPROVED -> APPROVED");
+  assert(mapStatus("DECLINED") === "DECLINED", "Mapeo canónico: DECLINED -> DECLINED");
+  assert(mapStatus("VOIDED") === "VOIDED", "Mapeo canónico: VOIDED -> VOIDED");
+  assert(mapStatus("ERROR") === "ERROR", "Mapeo canónico: ERROR -> ERROR");
+  assert(mapStatus("PENDING") === "PENDING", "Mapeo canónico: PENDING -> PENDING");
+  assert(mapStatus("UNKNOWN_CODE") === "PENDING", "Mapeo de seguridad: Estado desconocido queda como PENDING");
+}
+
 // Ejecución
 testIntegritySignature();
 testWebhookChecksumVerification();
 testIdempotencyAndStateLedger();
 testAmountLimits();
+testSemanticReferenceGeneration();
+testWompiStatusMapping();
 
 console.log(`\n${CYAN}====================================================${RESET}`);
 console.log(`Resultados: ${GREEN}${passedCount} pasaron${RESET}, ${failedCount > 0 ? RED : GREEN}${failedCount} fallaron${RESET}`);

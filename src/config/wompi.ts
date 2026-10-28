@@ -5,7 +5,7 @@ export interface DonationOption {
 }
 
 export const wompiConfig = {
-  environment: (process.env.WOMPI_ENVIRONMENT || "sandbox") as "sandbox" | "production",
+  environment: ((process.env.NEXT_PUBLIC_WOMPI_ENVIRONMENT || process.env.WOMPI_ENVIRONMENT || "sandbox").toLowerCase() === "production" ? "production" : "sandbox") as "sandbox" | "production",
   currency: "COP",
   minAmountCOP: 10000, // Límite mínimo legal/operativo en Wompi COP ($10.000 COP)
   maxAmountCOP: 50000000, // Límite máximo de control anti-abuso ($50.000.000 COP)

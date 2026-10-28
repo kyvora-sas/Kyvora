@@ -2,11 +2,27 @@ import { NextResponse } from "next/server";
 import { transactionStore } from "@/lib/transactions-store";
 import { wompiConfig } from "@/config/wompi";
 
+function mapWompiStatus(status: unknown): "APPROVED" | "PENDING" | "DECLINED" | "VOIDED" | "ERROR" {
+  switch (String(status)) {
+    case "APPROVED":
+      return "APPROVED";
+    case "DECLINED":
+      return "DECLINED";
+    case "VOIDED":
+      return "VOIDED";
+    case "ERROR":
+      return "ERROR";
+    case "PENDING":
+    default:
+      return "PENDING";
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const reference = searchParams.get("reference");
-    const transactionId = searchParams.get("id"); // Wompi a veces añade 'id' en la URL de redirección
+    const transactionId = searchParams.get("id"); // Wompi añade 'id' al redirigir al comercio
 
     if (!reference && !transactionId) {
       return NextResponse.json(
@@ -20,48 +36,96 @@ export async function GET(request: Request) {
       record = await transactionStore.findByReference(reference);
     }
 
-    // Si aún no está en el ledger local pero vino con un id de transacción de Wompi, o está en PENDING
-    // se puede consultar el API de Wompi para verificar el estado en tiempo real
-    if (record && record.status === "PENDING" && record.wompiTransactionId) {
+    const env = (
+      process.env.NEXT_PUBLIC_WOMPI_ENVIRONMENT ||
+      process.env.WOMPI_ENVIRONMENT ||
+      "sandbox"
+    ).toLowerCase() === "production" ? "production" : "sandbox";
+
+    const apiKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
+    const effectiveTxId = transactionId || record?.wompiTransactionId;
+
+    // 1. Si la transacción está en PENDING y disponemos de ID de Wompi, sincronizar estado en vivo
+    if (record && record.status === "PENDING" && effectiveTxId && apiKey) {
       try {
-        const env = process.env.WOMPI_ENVIRONMENT === "production" ? "production" : "sandbox";
-        const apiUrl = `${wompiConfig.apiBaseUrl[env]}/transactions/${record.wompiTransactionId}`;
-        const apiKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || "";
-        
-        if (apiKey) {
-          const res = await fetch(apiUrl, {
-            headers: { Authorization: `Bearer ${apiKey}` },
-            cache: "no-store",
-          });
-          if (res.ok) {
-            const wompiData = await res.json();
-            const tx = wompiData?.data;
-            if (tx && tx.status) {
-              const mappedStatus =
-                tx.status === "APPROVED"
-                  ? "APPROVED"
-                  : tx.status === "DECLINED"
-                  ? "DECLINED"
-                  : tx.status === "VOIDED"
-                  ? "VOIDED"
-                  : tx.status === "ERROR"
-                  ? "ERROR"
-                  : "PENDING";
-              
-              if (mappedStatus !== record.status) {
-                record = await transactionStore.updateStatus(
-                  record.reference,
-                  mappedStatus,
-                  tx.id,
-                  undefined,
-                  `Estado sincronizado directamente desde API Wompi (${tx.status}).`
-                );
-              }
+        const apiUrl = `${wompiConfig.apiBaseUrl[env]}/transactions/${effectiveTxId}`;
+        const res = await fetch(apiUrl, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const wompiData = await res.json();
+          const tx = wompiData?.data;
+          if (tx && tx.status) {
+            const mappedStatus = mapWompiStatus(tx.status);
+
+            if (mappedStatus !== record.status) {
+              record = await transactionStore.updateStatus(
+                record.reference,
+                mappedStatus,
+                tx.id,
+                undefined,
+                `Estado sincronizado en tiempo real desde API Wompi (${tx.status}).`
+              );
             }
           }
         }
       } catch (syncErr) {
         console.warn("[api/donate/status] Fallo al sincronizar con API Wompi:", syncErr);
+      }
+    }
+
+    // 2. Si el registro no se encontró en el ledger local pero el cliente aportó un ID de Wompi
+    // (resiliencia ante arranques fríos o despliegues serverless de Vercel)
+    if (!record && transactionId && apiKey) {
+      try {
+        const apiUrl = `${wompiConfig.apiBaseUrl[env]}/transactions/${transactionId}`;
+        const res = await fetch(apiUrl, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const wompiData = await res.json();
+          const tx = wompiData?.data;
+          if (tx && tx.reference) {
+            // Si el cliente también envió referencia, verificar que coincidan
+            if (!reference || reference === tx.reference) {
+              const mappedStatus = mapWompiStatus(tx.status);
+
+              let inferredTarget = "general";
+              if (tx.reference.includes("-PULSO-")) inferredTarget = "pulso";
+              else if (tx.reference.includes("-QUAKE-")) inferredTarget = "quakenet";
+              else if (tx.reference.includes("-PULSAI-")) inferredTarget = "pulsai";
+
+              const recoveredRecord = {
+                reference: tx.reference,
+                amountCOP: Math.round(Number(tx.amount_in_cents || 0) / 100),
+                amountInCents: Number(tx.amount_in_cents || 0),
+                currency: tx.currency || "COP",
+                targetId: inferredTarget,
+                donorName: tx.customer_data?.full_name || undefined,
+                donorEmail: tx.customer_data?.email || undefined,
+                status: mappedStatus,
+                wompiTransactionId: tx.id,
+                createdAt: tx.created_at || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                processedEventIds: [],
+                auditLogs: [
+                  {
+                    timestamp: new Date().toISOString(),
+                    action: "RECOVERED_FROM_WOMPI_API",
+                    details: `Transacción recuperada directamente desde API Wompi (${tx.status}).`,
+                  },
+                ],
+              };
+
+              await transactionStore.save(recoveredRecord);
+              record = recoveredRecord;
+            }
+          }
+        }
+      } catch (recoveryErr) {
+        console.warn("[api/donate/status] Fallo al recuperar transacción desde API Wompi:", recoveryErr);
       }
     }
 

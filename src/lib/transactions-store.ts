@@ -201,16 +201,19 @@ interface GlobalWithKyvoraPool {
   __kyvoraPostgresPool?: Pool;
 }
 
-function getOrCreatePool(connectionString?: string): Pool {
+export function getOrCreatePool(connectionString?: string): Pool {
   const globalObj = globalThis as unknown as GlobalWithKyvoraPool;
   if (globalObj.__kyvoraPostgresPool && !connectionString) {
     return globalObj.__kyvoraPostgresPool;
   }
 
   const conn = connectionString || process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+  const isLocalHost = conn.includes("localhost") || conn.includes("127.0.0.1");
+  const rejectUnauthorized = process.env.PG_SSL_REJECT_UNAUTHORIZED === "false" ? false : true;
+
   const pool = new Pool({
     connectionString: conn,
-    ssl: conn.includes("localhost") ? false : { rejectUnauthorized: false },
+    ssl: isLocalHost ? false : { rejectUnauthorized },
     max: 5,
     idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 5000,

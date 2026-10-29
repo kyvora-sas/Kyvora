@@ -131,11 +131,15 @@ La tabla `donations` incluye:
 ### Validaciones Obligatorias en cada Consulta
 El servidor nunca confía en parámetros enviados por el navegador ni aprueba donaciones sin validar:
 1. **Existencia en Wompi:** Se consulta `GET /v1/transactions/:id` utilizando la llave privada (`WOMPI_PRIVATE_KEY`).
-2. **Concordancia de Referencia:** Si `tx.reference !== record.reference`, responde HTTP 400 con código `REFERENCE_MISMATCH`. No modifica el registro consultado ni el ajeno.
+2. **Concordancia de Referencia:** Si `tx.reference !== record.reference`, responde HTTP 400 con código `REFERENCE_MISMATCH`. Por privacidad (SEC-04), el servidor nunca expone referencias internas ajenas en mensajes de error.
 3. **Concordancia de Importe:** Si `tx.amount_in_cents !== record.amountInCents`, responde HTTP 400 con código `AMOUNT_MISMATCH`.
 4. **Concordancia de Moneda:** Si `tx.currency !== record.currency` (`COP`), responde HTTP 400 con código `CURRENCY_MISMATCH`.
 5. **No Reutilización de IDs:** Si el `id` de Wompi ya está asociado a otra donación, responde HTTP 400 con código `TRANSACTION_ALREADY_BOUND`.
 6. **Máquina de Estados:** Un evento tardío que reporte `PENDING` **nunca** puede degradar una donación que ya fue confirmada como `APPROVED` o `DECLINED`.
+7. **Rate Limiting Distribuido (SEC-03):** Control atómico respaldado en PostgreSQL (`public.rate_limits`) con ventana deslizante: 15 solicitudes / 5 min en creación y 60 consultas / 2 min en verificación de estado, mitigando abusos y denegación de servicio.
+8. **Idempotencia Determinista en Webhooks (SEC-01):** Cada evento webhook genera una huella determinista `evt_{txId}_{status}_{timestamp}`. Esto garantiza que un evento `PENDING` no bloquee un evento posterior `APPROVED`, mientras que reintentos idénticos del mismo evento son descartados de forma idempotente.
+9. **Validación Estricta de Ambiente (SEC-02):** El webhook rechaza con HTTP 400 eventos cuyo campo `environment` no coincida exactamente con el entorno configurado (`prod` en producción, `test` en sandbox).
+10. **Protección contra Replays y Timestamp (SEC-06):** Se rechazan timestamps anómalos en el futuro lejano (> 10 min), mientras que eventos retrasados legítimos de Wompi son admitidos y reconciliados de forma segura mediante la máquina de estados y el ledger de idempotencia.
 
 ---
 

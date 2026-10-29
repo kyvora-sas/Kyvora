@@ -191,7 +191,7 @@ function DonationResultContent() {
             </p>
           </div>
         ) : error ? (
-          error.code === "REFERENCE_MISMATCH" && error.actualReference ? (
+          error.code === "REFERENCE_MISMATCH" ? (
             <div className="bg-surface p-8 md:p-12 rounded-2xl border border-amber-500/30 text-center space-y-6">
               <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
                 <ShieldAlert className="w-9 h-9" />
@@ -201,7 +201,7 @@ function DonationResultContent() {
                   Discrepancia de Referencia
                 </span>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-                  El ID de Wompi pertenece a otra donación
+                  Identificador no corresponde a la donación
                 </h1>
               </div>
               <p className="text-foreground-muted text-sm max-w-lg mx-auto leading-relaxed">
@@ -209,33 +209,30 @@ function DonationResultContent() {
               </p>
 
               <div className="bg-background/80 p-5 rounded-xl border border-white/5 text-left text-xs sm:text-sm space-y-2 font-mono max-w-lg mx-auto">
-                <div className="flex flex-col sm:flex-row justify-between border-b border-white/5 pb-2 gap-1">
-                  <span className="text-foreground-muted">Referencia en pantalla:</span>
+                <div className="flex flex-col sm:flex-row justify-between gap-1">
+                  <span className="text-foreground-muted">Referencia consultada:</span>
                   <span className="text-white font-medium">{error.requestedReference || reference}</span>
-                </div>
-                <div className="flex flex-col sm:flex-row justify-between gap-1 pt-1">
-                  <span className="text-foreground-muted">Referencia pagada en Wompi:</span>
-                  <span className="text-emerald-400 font-bold">{error.actualReference}</span>
                 </div>
               </div>
 
               <div className="pt-4 flex flex-col sm:flex-row justify-center gap-4">
-                <Link
-                  href={`/donate/resultado?reference=${encodeURIComponent(error.actualReference)}&id=${encodeURIComponent(manualWompiId || currentWompiId)}`}
-                  className="px-6 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                >
-                  <span>Verificar referencia pagada ({error.actualReference.slice(0, 18)}...)</span>
-                </Link>
                 <button
                   onClick={() => {
                     setError(null);
                     setManualWompiId("");
                     fetchStatus("");
                   }}
+                  className="px-6 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Reintentar con otro ID de Wompi</span>
+                </button>
+                <Link
+                  href="/#donate"
                   className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors flex items-center justify-center"
                 >
-                  <span>Reintentar con otro ID</span>
-                </button>
+                  <span>Volver a Donaciones</span>
+                </Link>
               </div>
             </div>
           ) : (

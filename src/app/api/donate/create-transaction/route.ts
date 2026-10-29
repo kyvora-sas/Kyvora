@@ -8,9 +8,29 @@ import {
   buildWompiReturnUrl,
 } from "@/lib/wompi";
 import { transactionStore } from "@/lib/transactions-store";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limiter";
 
 export async function POST(request: Request) {
   try {
+    // 0. Control de tasa de peticiones (SEC-03: Rate Limiting distribuido)
+    // Máximo 15 intenciones de donación por ventana de 5 minutos por IP
+    const clientIp = getClientIp(request);
+    const rateLimit = await checkRateLimit(`rate:donate:create:${clientIp}`, 15, 300);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Has superado el límite de solicitudes de donación por ahora. Por favor, espera unos minutos.",
+          code: "RATE_LIMIT_EXCEEDED",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.ttlSeconds),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const { amountCOP, targetId, donorName, donorEmail } = body;
 

@@ -11,6 +11,7 @@ import {
   fetchWompiTransactionByReference,
   WompiApiTransaction,
 } from "@/lib/wompi";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limiter";
 
 function mapWompiStatus(status: unknown): "APPROVED" | "PENDING" | "DECLINED" | "VOIDED" | "ERROR" {
   switch (String(status)) {
@@ -37,6 +38,25 @@ function inferTargetId(reference: string): string {
 
 export async function GET(request: Request) {
   try {
+    // 0. Control de tasa de peticiones (SEC-03: Rate Limiting distribuido)
+    // Máximo 60 consultas de estado por ventana de 2 minutos por IP
+    const clientIp = getClientIp(request);
+    const rateLimit = await checkRateLimit(`rate:donate:status:${clientIp}`, 60, 120);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Has alcanzado el límite de consultas de estado por ahora. Por favor, espera un momento.",
+          code: "RATE_LIMIT_EXCEEDED",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.ttlSeconds),
+          },
+        }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const { reference, transactionId } = parseWompiReturnParams(searchParams);
 
@@ -111,9 +131,8 @@ export async function GET(request: Request) {
           );
           return NextResponse.json(
             {
-              error: `El ID de transacción de Wompi ingresado ya fue asignado previamente a otra donación (${existingBound.reference}).`,
+              error: "El ID de transacción de Wompi ingresado ya fue asignado previamente a otra donación.",
               code: "TRANSACTION_ALREADY_BOUND",
-              actualReference: existingBound.reference,
             },
             { status: 400 }
           );
@@ -150,10 +169,9 @@ export async function GET(request: Request) {
             );
             return NextResponse.json(
               {
-                error: `El ID de transacción de Wompi ingresado corresponde a otra referencia (${wompiTx.reference}) y no a la referencia consultada (${record.reference}).`,
+                error: "El ID de transacción de Wompi ingresado no corresponde a la referencia consultada.",
                 code: "REFERENCE_MISMATCH",
                 requestedReference: record.reference,
-                actualReference: wompiTx.reference,
               },
               { status: 400 }
             );
@@ -235,10 +253,9 @@ export async function GET(request: Request) {
             );
             return NextResponse.json(
               {
-                error: `El ID de transacción de Wompi ingresado corresponde a otra referencia (${wompiTx.reference}) y no a la referencia consultada (${reference}).`,
+                error: "El ID de transacción de Wompi ingresado no corresponde a la referencia consultada.",
                 code: "REFERENCE_MISMATCH",
                 requestedReference: reference,
-                actualReference: wompiTx.reference,
               },
               { status: 400 }
             );

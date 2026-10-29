@@ -85,3 +85,16 @@ COMMENT ON COLUMN public.donations.reference IS 'Identificador único emitido po
 COMMENT ON COLUMN public.donations.wompi_transaction_id IS 'Identificador oficial emitido por Wompi; previene reutilizaciones fraudulentas.';
 COMMENT ON COLUMN public.donations.processed_event_ids IS 'Historial de IDs de eventos de webhook procesados para garantizar idempotencia.';
 COMMENT ON COLUMN public.donations.audit_logs IS 'Trazabilidad de cambios de estado y respuestas recibidas de la pasarela.';
+
+-- 5. Tabla de Limitación de Tasa (Rate Limiting distribuido para Vercel Serverless)
+CREATE TABLE IF NOT EXISTS public.rate_limits (
+    key VARCHAR(120) PRIMARY KEY,
+    count INTEGER NOT NULL DEFAULT 1,
+    reset_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_reset_at 
+    ON public.rate_limits (reset_at);
+
+COMMENT ON TABLE public.rate_limits IS 'Control de tasa de peticiones (rate limiting) distribuido entre instancias serverless de Vercel.';
+

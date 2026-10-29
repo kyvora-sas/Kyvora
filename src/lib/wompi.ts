@@ -67,8 +67,17 @@ export function verifyWebhookChecksum(
   const receivedChecksum = sig.checksum as string | undefined;
   const timestamp = eventPayload.timestamp;
 
-  if (!receivedChecksum || timestamp === undefined) {
+  if (!receivedChecksum || timestamp === undefined || timestamp === null) {
     return { isValid: false, reason: "Checksum o timestamp faltante en el evento" };
+  }
+
+  if (properties.length === 0) {
+    return { isValid: false, reason: "La lista de propiedades de firma está vacía" };
+  }
+
+  const hasTransactionProps = properties.some((p) => typeof p === "string" && p.startsWith("transaction."));
+  if (!hasTransactionProps) {
+    return { isValid: false, reason: "La firma no contiene propiedades requeridas de transacción" };
   }
 
   // Función recursiva para obtener propiedades anidadas seguras

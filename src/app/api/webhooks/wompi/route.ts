@@ -33,32 +33,68 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Verificación de ambiente
-    const currentEnv = (
+    // 3. Verificación estricta de ambiente (SEC-02)
+    // Valores oficiales de Wompi: "prod" (Producción) y "test" (Sandbox/Pruebas)
+    const expectedEnv = (
       process.env.NEXT_PUBLIC_WOMPI_ENVIRONMENT ||
       process.env.WOMPI_ENVIRONMENT ||
       "sandbox"
     ).toLowerCase() === "production" ? "prod" : "test";
 
-    if (eventPayload.environment && typeof eventPayload.environment === "string") {
-      const payloadEnv = eventPayload.environment.toLowerCase();
-      if (payloadEnv !== currentEnv) {
-        console.warn(
-          `[webhook/wompi] Advertencia: Discrepancia de ambiente en webhook. Servidor=${currentEnv}, Webhook=${payloadEnv}`
-        );
-      }
+    const payloadEnv = typeof eventPayload.environment === "string"
+      ? eventPayload.environment.trim().toLowerCase()
+      : null;
+
+    if (!payloadEnv) {
+      console.warn("[webhook/wompi] Rechazo de webhook: El payload no especifica la propiedad 'environment'.");
+      return NextResponse.json(
+        { error: "Campo 'environment' ausente o inválido en el evento." },
+        { status: 400 }
+      );
     }
 
-    // 4. Extraer datos del evento
+    if (payloadEnv !== expectedEnv) {
+      console.warn(
+        `[webhook/wompi] Rechazo de webhook: Discrepancia de ambiente. Servidor espera '${expectedEnv}', recibido '${payloadEnv}'.`
+      );
+      return NextResponse.json(
+        { error: `Discrepancia de ambiente: el evento (${payloadEnv}) no corresponde al entorno configurado (${expectedEnv}).` },
+        { status: 400 }
+      );
+    }
+
+    // 4. Validación de timestamp y prevención de reloj en el futuro lejano (SEC-06)
+    const rawTimestamp = Number(eventPayload.timestamp);
+    if (!rawTimestamp || isNaN(rawTimestamp)) {
+      return NextResponse.json({ error: "Timestamp de evento ausente o inválido." }, { status: 400 });
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    const eventSec = rawTimestamp > 1e11 ? Math.floor(rawTimestamp / 1000) : rawTimestamp;
+    if (eventSec > nowSec + 600) {
+      console.warn(`[webhook/wompi] Rechazo de webhook: Timestamp en el futuro lejano (${eventSec} vs ${nowSec}).`);
+      return NextResponse.json({ error: "Timestamp del evento inválido o en el futuro." }, { status: 400 });
+    }
+
+    // 5. Extraer datos del evento
     const dataObj = eventPayload.data as Record<string, unknown> | undefined;
     const tx = dataObj?.transaction as Record<string, unknown> | undefined;
-    const eventId = String(tx?.id || eventPayload.timestamp);
 
     if (!tx || typeof tx.reference !== "string") {
       return NextResponse.json({ error: "Transacción o referencia ausente en el evento." }, { status: 400 });
     }
 
-    // 5. Control de Idempotencia: Verificar si este evento exacto ya fue procesado
+    // 6. Huella digital determinista y única por entrega de evento (SEC-01)
+    // Permite que un evento posterior 'APPROVED' se procese aun si antes llegó un 'PENDING',
+    // pero garantiza que reintentos idénticos del mismo evento sean descartados idempotentemente.
+    const safeTxId = String(tx.id || "");
+    const safeStatus = String(tx.status || "UNKNOWN");
+    const sigObj = eventPayload.signature as Record<string, unknown> | undefined;
+    const checksumPart = sigObj?.checksum && typeof sigObj.checksum === "string"
+      ? sigObj.checksum.slice(0, 16)
+      : "";
+    const eventId = `evt_${safeTxId}_${safeStatus}_${eventSec}${checksumPart ? `_${checksumPart}` : ""}`;
+
+    // 7. Control de Idempotencia: Verificar si este evento exacto ya fue procesado
     const alreadyProcessed = await transactionStore.isEventProcessed(eventId);
     if (alreadyProcessed) {
       console.info(`[webhook/wompi] Evento ${eventId} ya procesado previamente. Idempotencia aplicada.`);

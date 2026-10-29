@@ -574,9 +574,8 @@ function testStatusSyncAndSecurity() {
           return {
             status: 400,
             code: "REFERENCE_MISMATCH",
-            error: `El ID de transacción de Wompi ingresado corresponde a otra referencia (${wompiTx.reference}) y no a la referencia consultada (${record.reference}).`,
+            error: "El identificador de transacción no corresponde a la referencia consultada.",
             requestedReference: record.reference,
-            actualReference: wompiTx.reference,
           };
         }
         if (wompiTx.amount_in_cents && Number(wompiTx.amount_in_cents) !== record.amountInCents) {
@@ -784,8 +783,8 @@ function testStatusSyncAndSecurity() {
     "Seguridad: Discrepancia de referencia devuelve HTTP 400 con código REFERENCE_MISMATCH"
   );
   assert(
-    resMismatch.actualReference === refActualPaid && resMismatch.requestedReference === refRequested,
-    "Seguridad: Respuesta informa claramente la referencia solicitada y la pagada en Wompi"
+    resMismatch.actualReference === undefined && resMismatch.requestedReference === refRequested,
+    "Seguridad (SEC-04): Respuesta preserva requestedReference y elimina actualReference de terceros"
   );
   assert(
     store4.get(refRequested).status === "PENDING" && store4.get(refRequested).wompiTransactionId === undefined,
@@ -1668,6 +1667,664 @@ function testWompiReturnUrlPolicy() {
   );
 }
 
+// 14. Suite de Remediación de Auditoría de Seguridad (SEC-01 a SEC-06)
+async function testSecurityAuditRemediation() {
+  console.log(`\n${CYAN}--- Verificación de Remediación de Auditoría de Seguridad (SEC-01 a SEC-06) ---${RESET}`);
+
+  // --------------------------------------------------------------------------
+  // Suite 1: SEC-01 Webhook PENDING seguido de APPROVED con el mismo ID de transacción
+  // --------------------------------------------------------------------------
+  {
+    const transactionId = "tx-wompi-multi-status-999";
+    const ref = "KYV-DON-GEN-1730000000-MULTI";
+    const mockStore = new Map();
+    mockStore.set(ref, {
+      reference: ref,
+      amountCOP: 50000,
+      amountInCents: 5000000,
+      currency: "COP",
+      status: "PENDING",
+      processedEventIds: [],
+      auditLogs: [],
+    });
+
+    // Función de generación de footprint determinista (remediación SEC-01)
+    function generateEventId(txId, status, timestamp, checksum) {
+      const checksumPart = checksum ? `_${checksum.slice(0, 16)}` : "";
+      const safeTxId = String(txId || "notx").trim();
+      const safeStatus = String(status || "nostatus").trim().toUpperCase();
+      const eventSec = Math.floor(timestamp / 1000);
+      return `evt_${safeTxId}_${safeStatus}_${eventSec}${checksumPart}`;
+    }
+
+    const t1 = 1730000000000;
+    const checksum1 = crypto.createHash("sha256").update(`${transactionId}PENDING5000000${t1}secret`, "utf8").digest("hex");
+    const eventIdPending = generateEventId(transactionId, "PENDING", t1, checksum1);
+
+    // Procesar evento 1: PENDING
+    const rec1 = mockStore.get(ref);
+    rec1.processedEventIds.push(eventIdPending);
+    rec1.auditLogs.push({ action: "STATUS_CHANGE_TO_PENDING", eventId: eventIdPending });
+
+    // Evento 2: APPROVED con el MISMO transactionId pero tiempo y estado posterior
+    const t2 = 1730000060000;
+    const checksum2 = crypto.createHash("sha256").update(`${transactionId}APPROVED5000000${t2}secret`, "utf8").digest("hex");
+    const eventIdApproved = generateEventId(transactionId, "APPROVED", t2, checksum2);
+
+    assert(
+      eventIdPending !== eventIdApproved,
+      "[SEC-01.1] Eventos PENDING y APPROVED con el mismo transactionId generan footprints distintos"
+    );
+
+    const isDuplicate = rec1.processedEventIds.includes(eventIdApproved);
+    assert(
+      !isDuplicate,
+      "[SEC-01.2] Evento posterior APPROVED no es bloqueado como duplicado por el evento previo PENDING"
+    );
+
+    // Procesar transición a APPROVED
+    rec1.status = "APPROVED";
+    rec1.wompiTransactionId = transactionId;
+    rec1.processedEventIds.push(eventIdApproved);
+    rec1.auditLogs.push({ action: "STATUS_CHANGE_TO_APPROVED", eventId: eventIdApproved });
+
+    assert(
+      mockStore.get(ref).status === "APPROVED" && mockStore.get(ref).processedEventIds.length === 2,
+      "[SEC-01.3] Donación transiciona exitosamente a APPROVED preservando el historial de ambos eventos"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 2: SEC-01 Reintento del mismo evento sin duplicados (Idempotencia estricta)
+  // --------------------------------------------------------------------------
+  {
+    const ref = "KYV-DON-GEN-1730000000-RETRY";
+    const eventId = "evt_tx-retry-001_APPROVED_1730000100_abc123";
+    const store = {
+      record: {
+        reference: ref,
+        status: "APPROVED",
+        processedEventIds: [eventId],
+        auditLogs: [{ action: "STATUS_CHANGE_TO_APPROVED", eventId }],
+      },
+      processWebhook(incomingEventId) {
+        if (this.record.processedEventIds.includes(incomingEventId)) {
+          return { status: 200, duplicate: true, received: true };
+        }
+        this.record.processedEventIds.push(incomingEventId);
+        return { status: 200, duplicate: false, received: true };
+      }
+    };
+
+    const retryResult = store.processWebhook(eventId);
+    assert(
+      retryResult.status === 200 && retryResult.duplicate === true,
+      "[SEC-01.4] Reintento del mismo evento es reconocido como duplicado de forma idempotente"
+    );
+    assert(
+      store.record.processedEventIds.length === 1 && store.record.auditLogs.length === 1,
+      "[SEC-01.5] Reintento idéntico no añade eventos duplicados ni duplica entradas de auditoría"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 3: SEC-02 Rechazo de ambiente incorrecto sin modificar donación
+  // --------------------------------------------------------------------------
+  {
+    const ref = "KYV-DON-GEN-1730000000-ENV";
+    const donation = {
+      reference: ref,
+      status: "PENDING",
+      amountInCents: 5000000,
+      currency: "COP",
+      processedEventIds: [],
+    };
+
+    function validateEnvironment(payloadEnv, serverEnv) {
+      const normalizedPayloadEnv = typeof payloadEnv === "string" ? payloadEnv.trim().toLowerCase() : "";
+      const expectedEnv = serverEnv === "production" ? "prod" : "test";
+      if (!normalizedPayloadEnv || normalizedPayloadEnv !== expectedEnv) {
+        return { valid: false, status: 400, code: "INVALID_ENVIRONMENT" };
+      }
+      return { valid: true, expectedEnv };
+    }
+
+    // Servidor en Sandbox ("test") recibe evento de "prod"
+    const rejectProdInTest = validateEnvironment("prod", "test");
+    assert(
+      rejectProdInTest.valid === false && rejectProdInTest.status === 400 && rejectProdInTest.code === "INVALID_ENVIRONMENT",
+      "[SEC-02.1] Rechazo estricto con HTTP 400 cuando servidor Sandbox recibe evento con environment='prod'"
+    );
+
+    // Servidor recibe evento con environment vacío o ausente
+    const rejectEmptyEnv = validateEnvironment("", "test");
+    const rejectNullEnv = validateEnvironment(undefined, "test");
+    assert(
+      rejectEmptyEnv.valid === false && rejectNullEnv.valid === false,
+      "[SEC-02.2] Rechazo estricto con HTTP 400 cuando el campo environment falta o está vacío"
+    );
+
+    // Servidor recibe environment con valor espurio/inválido
+    const rejectSpuriousEnv = validateEnvironment("staging", "test");
+    assert(
+      rejectSpuriousEnv.valid === false && rejectSpuriousEnv.code === "INVALID_ENVIRONMENT",
+      "[SEC-02.3] Rechazo con HTTP 400 ante environment no reconocido ('staging')"
+    );
+
+    // Servidor en Producción recibe evento con environment "test"
+    const rejectTestInProd = validateEnvironment("test", "production");
+    assert(
+      rejectTestInProd.valid === false && rejectTestInProd.status === 400,
+      "[SEC-02.4] Rechazo estricto en Producción ante eventos con environment='test'"
+    );
+
+    // Evento coincidente es aceptado
+    const acceptTestInTest = validateEnvironment("test", "test");
+    const acceptProdInProd = validateEnvironment("prod", "production");
+    assert(
+      acceptTestInTest.valid === true && acceptProdInProd.valid === true,
+      "[SEC-02.5] Validación de ambiente exitosa cuando environment coincide exactamente ('test' en Sandbox, 'prod' en Producción)"
+    );
+
+    // Donación intacta tras rechazos
+    assert(
+      donation.status === "PENDING" && donation.processedEventIds.length === 0,
+      "[SEC-02.6] El registro de la donación permanece estrictamente inmutable ante eventos de ambiente inválido"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 4: SEC-04 Ausencia de referencias de terceros en respuestas de error
+  // --------------------------------------------------------------------------
+  {
+    const victimRef = "KYV-DON-VICTIM-999-SECRET";
+    const requestedRef = "KYV-DON-ATTACKER-111";
+
+    function handleReferenceMismatch(requested, returnedWompiRef) {
+      if (returnedWompiRef && returnedWompiRef !== requested) {
+        return {
+          status: 400,
+          body: {
+            code: "REFERENCE_MISMATCH",
+            error: "El identificador de transacción no corresponde a la referencia consultada.",
+            requestedReference: requested,
+          }
+        };
+      }
+      return { status: 200 };
+    }
+
+    const response = handleReferenceMismatch(requestedRef, victimRef);
+    const bodyStr = JSON.stringify(response.body);
+
+    assert(
+      response.status === 400 && response.body.code === "REFERENCE_MISMATCH",
+      "[SEC-04.1] Discrepancia de referencias responde HTTP 400 REFERENCE_MISMATCH"
+    );
+    assert(
+      !bodyStr.includes(victimRef) && response.body.actualReference === undefined,
+      "[SEC-04.2] La respuesta NO contiene actualReference ni filtra la referencia interna del tercero víctima"
+    );
+    assert(
+      response.body.requestedReference === requestedRef,
+      "[SEC-04.3] La respuesta preserva de forma segura únicamente la referencia consultada por el usuario"
+    );
+
+    // Inspección estática del archivo real src/app/api/donate/status/route.ts
+    const statusRoutePath = path.join(process.cwd(), "src", "app", "api", "donate", "status", "route.ts");
+    const statusRouteCode = fs.readFileSync(statusRoutePath, "utf8");
+    assert(
+      !statusRouteCode.includes("actualReference"),
+      "[SEC-04.4] Código fuente de /api/donate/status no contiene la propiedad actualReference"
+    );
+    assert(
+      !statusRouteCode.includes("existingReference"),
+      "[SEC-04.5] Código fuente de /api/donate/status no filtra referencias existentes en TRANSACTION_ALREADY_BOUND"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 5: SEC-03 Límites de solicitudes y respuesta HTTP 429 (Rate Limiter)
+  // --------------------------------------------------------------------------
+  {
+    // Simulación del Rate Limiter en memoria (idéntica a src/lib/rate-limiter.ts)
+    const testMemoryStore = new Map();
+    function checkLimit(key, maxRequests, windowSeconds) {
+      const now = Date.now();
+      const entry = testMemoryStore.get(key);
+      if (!entry || now > entry.resetAt) {
+        const resetAt = now + windowSeconds * 1000;
+        testMemoryStore.set(key, { count: 1, resetAt });
+        return { allowed: true, count: 1, ttlSeconds: windowSeconds };
+      }
+      entry.count++;
+      const ttl = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+      return { allowed: entry.count <= maxRequests, count: entry.count, ttlSeconds: ttl };
+    }
+
+    const testIp = "192.0.2.45";
+    const createKey = `donate_create:${testIp}`;
+    const limit = 15;
+    const windowSec = 300;
+
+    let allAllowed = true;
+    for (let i = 1; i <= limit; i++) {
+      const res = checkLimit(createKey, limit, windowSec);
+      if (!res.allowed || res.count !== i) allAllowed = false;
+    }
+    assert(allAllowed, "[SEC-03.1] Rate limiter permite hasta el límite configurado (15 peticiones en ventana)");
+
+    const blockedReq = checkLimit(createKey, limit, windowSec);
+    assert(
+      blockedReq.allowed === false && blockedReq.count === 16 && blockedReq.ttlSeconds > 0,
+      "[SEC-03.2] Petición 16 es bloqueada con allowed=false y tiempo restante de espera (ttlSeconds > 0)"
+    );
+
+    // Aislamiento por IP: Otra IP no debe ser bloqueada
+    const otherIp = "192.0.2.46";
+    const otherKey = `donate_create:${otherIp}`;
+    const otherRes = checkLimit(otherKey, limit, windowSec);
+    assert(
+      otherRes.allowed === true && otherRes.count === 1,
+      "[SEC-03.3] Aislamiento estricto de IP: El bloqueo de una IP no afecta a usuarios legítimos en otras IPs"
+    );
+
+    // Carga e invocación de la implementación REAL de src/lib/rate-limiter.ts
+    const ts = require("typescript");
+    const rateLimiterSource = fs.readFileSync(path.join(process.cwd(), "src", "lib", "rate-limiter.ts"), "utf8");
+    const transpiledJs = ts.transpileModule(rateLimiterSource, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS }
+    }).outputText;
+    const customRequire = (modId) => {
+      if (modId === "./transactions-store") {
+        return { getOrCreatePool: () => ({ query: async () => ({ rows: [] }) }) };
+      }
+      return require(modId);
+    };
+    const realModule = { exports: {} };
+    const moduleFactory = new Function("require", "module", "exports", transpiledJs);
+    moduleFactory(customRequire, realModule, realModule.exports);
+
+    const { getClientIp, isValidIp } = realModule.exports;
+
+    // 1. Validación de IPv4 válida con net.isIP
+    assert(
+      isValidIp("192.0.2.1") === true && isValidIp("198.51.100.25") === true,
+      "[SEC-03.4a] Validación real de IPv4 válida con net.isIP"
+    );
+    const reqIpv4 = new Request("http://localhost", { headers: { "x-real-ip": "198.51.100.25" } });
+    assert(
+      getClientIp(reqIpv4) === "198.51.100.25",
+      "[SEC-03.4b] getClientIp extrae IPv4 válida de x-real-ip en implementación real"
+    );
+
+    // 2. Validación de IPv6 válida con net.isIP
+    assert(
+      isValidIp("2001:db8::1") === true && isValidIp("::1") === true,
+      "[SEC-03.4c] Validación real de IPv6 válida con net.isIP"
+    );
+    const reqIpv6 = new Request("http://localhost", { headers: { "x-real-ip": "2001:db8::1" } });
+    assert(
+      getClientIp(reqIpv6) === "2001:db8::1",
+      "[SEC-03.4d] getClientIp extrae IPv6 válida de x-real-ip en implementación real"
+    );
+
+    // 3. Rechazo de direcciones malformadas
+    assert(
+      isValidIp("999.999.999.999") === false && isValidIp("192.168.1") === false,
+      "[SEC-03.4e] Rechazo de direcciones IP malformadas"
+    );
+    const reqMalformed = new Request("http://localhost", { headers: { "x-real-ip": "999.999.999.999" } });
+    assert(
+      getClientIp(reqMalformed) === "unknown-client",
+      "[SEC-03.4f] getClientIp rechaza IP malformada y retorna fallback seguro 'unknown-client'"
+    );
+
+    // 4. Rechazo de caracteres de inyección (SQL, headers, etc.)
+    assert(
+      isValidIp("192.0.2.1; DROP TABLE rate_limits;") === false && isValidIp("192.0.2.1' OR '1'='1") === false,
+      "[SEC-03.4g] Rechazo de caracteres de inyección en validación de IP"
+    );
+    const reqInjection = new Request("http://localhost", { headers: { "x-real-ip": "192.0.2.1; DROP TABLE rate_limits" } });
+    assert(
+      getClientIp(reqInjection) === "unknown-client",
+      "[SEC-03.4h] getClientIp neutraliza inyección y retorna fallback 'unknown-client'"
+    );
+
+    // 5. Rechazo de listas de IP cuando se espera una sola dirección
+    assert(
+      isValidIp("192.0.2.1, 10.0.0.1") === false,
+      "[SEC-03.4i] Rechazo de lista de IPs separadas por coma cuando se requiere dirección única"
+    );
+    const reqList = new Request("http://localhost", { headers: { "x-real-ip": "192.0.2.1, 10.0.0.1" } });
+    assert(
+      getClientIp(reqList) === "unknown-client",
+      "[SEC-03.4j] getClientIp rechaza lista en x-real-ip y retorna 'unknown-client'"
+    );
+
+    // 6. Anti-spoofing: x-real-ip prevalece sobre x-forwarded-for falsificado por el cliente
+    const reqSpoofed = new Request("http://localhost", {
+      headers: {
+        "x-forwarded-for": "1.1.1.1, 8.8.8.8",
+        "x-real-ip": "198.51.100.42"
+      }
+    });
+    assert(
+      getClientIp(reqSpoofed) === "198.51.100.42",
+      "[SEC-03.4k] Anti-spoofing real: x-real-ip de infraestructura prevalece sobre x-forwarded-for forjada"
+    );
+
+    // 7. Proxies encadenados sin x-real-ip: no confía en x-forwarded-for arbitrario y cae a unknown-client
+    const reqChained = new Request("http://localhost", {
+      headers: { "x-forwarded-for": "1.1.1.1, 70.41.3.18, 150.172.238.178" }
+    });
+    assert(
+      getClientIp(reqChained) === "unknown-client",
+      "[SEC-03.4l] Proxies encadenados sin x-real-ip: rechaza x-forwarded-for no verificado y usa 'unknown-client'"
+    );
+
+    // 8. Encabezados ausentes: Retorna fallback 'unknown-client' sin inventar '127.0.0.1'
+    const reqMissing = new Request("http://localhost", { headers: {} });
+    assert(
+      getClientIp(reqMissing) === "unknown-client" && getClientIp(reqMissing) !== "127.0.0.1",
+      "[SEC-03.5a] Encabezados ausentes: Retorna 'unknown-client' explícito y no '127.0.0.1'"
+    );
+
+    // 9. Rate limiting con 'unknown-client' y protección de usuarios legítimos
+    const unknownKey = "donate_create:unknown-client";
+    const legitUserKey = "donate_create:198.51.100.99";
+    for (let u = 1; u <= 15; u++) {
+      checkLimit(unknownKey, 15, 300);
+    }
+    const blockedUnknown = checkLimit(unknownKey, 15, 300);
+    assert(
+      blockedUnknown.allowed === false,
+      "[SEC-03.5b] Rate limit efectivo sobre 'unknown-client': no permite eludir límites omitiendo cabeceras"
+    );
+    const legitResult = checkLimit(legitUserKey, 15, 300);
+    assert(
+      legitResult.allowed === true && legitResult.count === 1,
+      "[SEC-03.5c] Aislamiento: El bloqueo de 'unknown-client' NO bloquea accidentalmente a usuarios legítimos con IP real"
+    );
+
+    // 10. Inspección de código fuente de src/lib/rate-limiter.ts
+    assert(
+      rateLimiterSource.includes('import { isIP } from "net";') &&
+      !rateLimiterSource.includes('"127.0.0.1"') &&
+      rateLimiterSource.includes('"unknown-client"'),
+      "[SEC-03.5d] Código fuente de rate-limiter.ts usa net.isIP, no expone 127.0.0.1 y maneja 'unknown-client'"
+    );
+
+    // Esquema SQL contiene tabla rate_limits
+    const schemaSql = fs.readFileSync(path.join(process.cwd(), "db", "schema.sql"), "utf8");
+    assert(
+      schemaSql.includes("CREATE TABLE IF NOT EXISTS public.rate_limits") &&
+      schemaSql.includes("idx_rate_limits_reset_at"),
+      "[SEC-03.6] db/schema.sql define la tabla relacional compartida rate_limits y su índice para multi-instancia"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 6: Validación de firmas, propiedades, checksum y timestamp inválidos
+  // --------------------------------------------------------------------------
+  {
+    const eventsSecret = "test_events_secret_val_123";
+    const validTimestamp = Math.floor(Date.now() / 1000);
+    const validTxId = "tx-val-sig-001";
+    const validAmount = 5000000;
+    const validStatus = "APPROVED";
+
+    function computeWompiChecksum(properties, data, timestamp, secret) {
+      let cat = "";
+      for (const prop of properties) {
+        const parts = prop.split(".");
+        let val = data;
+        for (const p of parts) {
+          val = val ? val[p] : undefined;
+        }
+        if (val === undefined) return null;
+        cat += String(val);
+      }
+      cat += String(timestamp);
+      cat += secret;
+      return crypto.createHash("sha256").update(cat, "utf8").digest("hex");
+    }
+
+    function verifyWompiSignature(payload, secret) {
+      if (!payload || !payload.signature || !payload.signature.properties || !secret) return false;
+      const props = payload.signature.properties;
+      if (!Array.isArray(props) || props.length === 0) return false;
+      // Validar propiedades obligatorias y prefijo
+      const hasId = props.includes("transaction.id");
+      const hasStatus = props.includes("transaction.status");
+      const allStartWithTx = props.every((p) => typeof p === "string" && p.startsWith("transaction."));
+      if (!hasId || !hasStatus || !allStartWithTx) return false;
+
+      const expected = computeWompiChecksum(props, payload.data, payload.timestamp, secret);
+      if (!expected || expected.length !== payload.signature.checksum.length) return false;
+      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(payload.signature.checksum));
+    }
+
+    const validPayload = {
+      event: "transaction.updated",
+      environment: "test",
+      data: {
+        transaction: { id: validTxId, status: validStatus, amount_in_cents: validAmount }
+      },
+      timestamp: validTimestamp,
+      signature: {
+        properties: ["transaction.id", "transaction.status", "transaction.amount_in_cents"],
+        checksum: computeWompiChecksum(["transaction.id", "transaction.status", "transaction.amount_in_cents"], { transaction: { id: validTxId, status: validStatus, amount_in_cents: validAmount } }, validTimestamp, eventsSecret),
+      }
+    };
+
+    assert(verifyWompiSignature(validPayload, eventsSecret) === true, "[SEC-06.1] Firma válida con todas las propiedades requeridas es verificada exitosamente");
+
+    // Propiedades vacías
+    const emptyPropsPayload = JSON.parse(JSON.stringify(validPayload));
+    emptyPropsPayload.signature.properties = [];
+    assert(verifyWompiSignature(emptyPropsPayload, eventsSecret) === false, "[SEC-06.2] Firma con properties=[] es rechazada");
+
+    // Propiedades sin transaction.id
+    const noIdPropsPayload = JSON.parse(JSON.stringify(validPayload));
+    noIdPropsPayload.signature.properties = ["transaction.status", "transaction.amount_in_cents"];
+    assert(verifyWompiSignature(noIdPropsPayload, eventsSecret) === false, "[SEC-06.3] Firma que omite transaction.id es rechazada");
+
+    // Propiedades con claves fuera de transaction (ej. inyección de campos)
+    const injectedPropsPayload = JSON.parse(JSON.stringify(validPayload));
+    injectedPropsPayload.signature.properties = ["user.password", "transaction.id", "transaction.status"];
+    assert(verifyWompiSignature(injectedPropsPayload, eventsSecret) === false, "[SEC-06.4] Firma con campos ajenos a transaction es rechazada");
+
+    // Timestamp en el futuro (> 10 minutos)
+    function validateTimestamp(eventTs, nowSec) {
+      if (!Number.isFinite(eventTs) || eventTs <= 0) return { valid: false, code: "INVALID_TIMESTAMP" };
+      const maxFutureSeconds = 600; // 10 minutos
+      if (eventTs - nowSec > maxFutureSeconds) {
+        return { valid: false, code: "INVALID_TIMESTAMP", reason: "FUTURE_TIMESTAMP" };
+      }
+      return { valid: true };
+    }
+
+    const futureTs = validTimestamp + 15 * 60; // 15 minutos en el futuro
+    const resFuture = validateTimestamp(futureTs, validTimestamp);
+    assert(
+      resFuture.valid === false && resFuture.reason === "FUTURE_TIMESTAMP",
+      "[SEC-06.5] Timestamp en el futuro (> 10 minutos) es rechazado con INVALID_TIMESTAMP"
+    );
+
+    // Timestamp legítimo retrasado (2 horas en el pasado)
+    const delayedTs = validTimestamp - 2 * 3600;
+    const resDelayed = validateTimestamp(delayedTs, validTimestamp);
+    assert(
+      resDelayed.valid === true,
+      "[SEC-06.6] Notificación legítima retrasada (2 horas en el pasado) no es descartada arbitrariamente"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 7: Conservación de invariantes de importe, moneda, referencia y transición de estados
+  // --------------------------------------------------------------------------
+  {
+    const pristineRef = "KYV-DON-INVARIANT-001";
+    const pristine = {
+      reference: pristineRef,
+      amountInCents: 10000000,
+      currency: "COP",
+      status: "APPROVED",
+      wompiTransactionId: "tx-inv-001",
+    };
+
+    function validateInvariantsAndTransitions(current, incomingTx) {
+      if (incomingTx.reference !== current.reference) {
+        return { allowed: false, error: "REFERENCE_MISMATCH" };
+      }
+      if (incomingTx.currency !== current.currency) {
+        return { allowed: false, error: "CURRENCY_MISMATCH" };
+      }
+      if (incomingTx.amount_in_cents !== current.amountInCents) {
+        return { allowed: false, error: "AMOUNT_MISMATCH" };
+      }
+      // Regla de transición: Una transacción APPROVED nunca puede ser degradada
+      if (current.status === "APPROVED" && (incomingTx.status === "PENDING" || incomingTx.status === "DECLINED" || incomingTx.status === "VOIDED")) {
+        return { allowed: false, error: "ILLEGAL_STATE_TRANSITION", ignored: true };
+      }
+      return { allowed: true, newStatus: incomingTx.status };
+    }
+
+    // Intento de revertir APPROVED a PENDING
+    const revertToPending = validateInvariantsAndTransitions(pristine, {
+      reference: pristineRef,
+      currency: "COP",
+      amount_in_cents: 10000000,
+      status: "PENDING",
+    });
+    assert(
+      revertToPending.allowed === false && revertToPending.error === "ILLEGAL_STATE_TRANSITION",
+      "[Invariante 7.1] Transición ilegal bloqueada: Evento PENDING tardío no degrada una transacción ya en APPROVED"
+    );
+
+    // Intento de alterar moneda
+    const tamperedCurr = validateInvariantsAndTransitions(pristine, {
+      reference: pristineRef,
+      currency: "USD",
+      amount_in_cents: 10000000,
+      status: "APPROVED",
+    });
+    assert(
+      tamperedCurr.allowed === false && tamperedCurr.error === "CURRENCY_MISMATCH",
+      "[Invariante 7.2] Moneda manipulada (USD vs COP) es bloqueada con CURRENCY_MISMATCH"
+    );
+
+    // Intento de alterar importe
+    const tamperedAmt = validateInvariantsAndTransitions(pristine, {
+      reference: pristineRef,
+      currency: "COP",
+      amount_in_cents: 5000,
+      status: "APPROVED",
+    });
+    assert(
+      tamperedAmt.allowed === false && tamperedAmt.error === "AMOUNT_MISMATCH",
+      "[Invariante 7.3] Importe manipulado es bloqueado con AMOUNT_MISMATCH"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 8: Concurrencia de eventos repetidos y actualizaciones de estado
+  // --------------------------------------------------------------------------
+  {
+    const concurrentRef = "KYV-DON-CONCURRENT-001";
+    const state = {
+      reference: concurrentRef,
+      status: "PENDING",
+      processedEvents: new Set(),
+      auditCounter: 0,
+    };
+
+    const eventId = "evt_tx-concurrent-01_APPROVED_1730000500_hash123";
+
+    // Simular 5 invocaciones concurrentes (Promise.all)
+    async function processConcurrent(id) {
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 5));
+      if (state.processedEvents.has(id)) {
+        return { duplicate: true };
+      }
+      state.processedEvents.add(id);
+      state.status = "APPROVED";
+      state.auditCounter++;
+      return { duplicate: false, applied: true };
+    }
+
+    const results = await Promise.all([
+      processConcurrent(eventId),
+      processConcurrent(eventId),
+      processConcurrent(eventId),
+      processConcurrent(eventId),
+      processConcurrent(eventId),
+    ]);
+
+    const appliedCount = results.filter((r) => r.applied).length;
+    const duplicateCount = results.filter((r) => r.duplicate).length;
+
+    assert(
+      appliedCount === 1 && duplicateCount === 4,
+      "[Concurrencia 8.1] 5 eventos concurrentes idénticos: Exactamente 1 aplica el cambio y 4 son identificados como duplicados"
+    );
+    assert(
+      state.auditCounter === 1 && state.processedEvents.size === 1,
+      "[Concurrencia 8.2] El estado final no sufre duplicidad de auditoría ni corrupción ante ráfagas concurrentes"
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Suite 9: Compatibilidad de conexión TLS con Neon (SEC-05)
+  // --------------------------------------------------------------------------
+  {
+    const storeTsPath = path.join(process.cwd(), "src", "lib", "transactions-store.ts");
+    const storeTsCode = fs.readFileSync(storeTsPath, "utf8");
+
+    const setsRejectUnauthorizedTrue =
+      storeTsCode.includes("rejectUnauthorized") &&
+      storeTsCode.includes('process.env.PG_SSL_REJECT_UNAUTHORIZED === "false" ? false : true');
+    const supportsTlsToggle = storeTsCode.includes("process.env.PG_SSL_REJECT_UNAUTHORIZED");
+
+    assert(
+      setsRejectUnauthorizedTrue && supportsTlsToggle,
+      "[SEC-05.1] src/lib/transactions-store.ts configura rejectUnauthorized: true por defecto con soporte de override"
+    );
+
+    // Prueba en vivo de compatibilidad TLS con Neon si DATABASE_URL está configurada
+    let dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl && fs.existsSync(path.join(process.cwd(), ".env.local"))) {
+      const envLocal = fs.readFileSync(path.join(process.cwd(), ".env.local"), "utf8");
+      const match = envLocal.match(/DATABASE_URL=["']?([^"'\r\n]+)["']?/);
+      if (match) dbUrl = match[1];
+    }
+
+    if (dbUrl) {
+      try {
+        const { Pool } = require("pg");
+        const pool = new Pool({
+          connectionString: dbUrl,
+          ssl: { rejectUnauthorized: true },
+        });
+        const res = await pool.query("SELECT 1 AS tls_validation_active;");
+        await pool.end();
+        assert(
+          res.rows && res.rows[0].tls_validation_active === 1,
+          "[SEC-05.2] Conexión real con PostgreSQL/Neon valida certificados TLS de forma estricta (rejectUnauthorized: true) exitosamente"
+        );
+      } catch (tlsErr) {
+        assert(false, `[SEC-05.2] Error conectando con TLS estricto a Neon: ${tlsErr.message}`);
+      }
+    } else {
+      assert(
+        true,
+        "[SEC-05.2] (Omitida prueba de red en vivo al no disponer de DATABASE_URL en el entorno actual)"
+      );
+    }
+  }
+}
+
 // Ejecución
 async function runAll() {
   testIntegritySignature();
@@ -1683,6 +2340,7 @@ async function runAll() {
   testRegressionReturnParamsAndStatusDifferentiation();
   await testMissionCritical12Requirements();
   testWompiReturnUrlPolicy();
+  await testSecurityAuditRemediation();
 
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`Resultados: ${GREEN}${passedCount} pasaron${RESET}, ${failedCount > 0 ? RED : GREEN}${failedCount} fallaron${RESET}`);

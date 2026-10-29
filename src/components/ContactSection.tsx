@@ -96,7 +96,7 @@ export default function ContactSection() {
                 </a>
 
                 <a
-                  href={`mailto:${siteConfig.contacts.email}`}
+                  href={siteConfig.contacts.emailHref}
                   className="p-3.5 rounded-xl bg-surface border border-white/5 hover:border-[var(--color-accent)]/50 transition-colors flex items-center gap-3 text-white group"
                 >
                   <Mail className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />

@@ -1,3 +1,7 @@
+import { formatMailto } from "@/lib/format";
+
+export { formatMailto };
+
 /**
  * Configuración Legal Institucional para KYVORA en Colombia.
  * 
@@ -7,6 +11,9 @@
  * Los campos pendientes están claramente identificados como marcadores [PENDIENTE_...]
  * para ser completados por el propietario antes del despliegue en producción.
  */
+
+const contactEmail = "danielcanizales@kyvora.net.co - juand08@kyvora.net.co";
+const legalEmail = "kyvorasas@gmail.com - danielcanizales@kyvora.net.co";
 
 export const legalConfig = {
   brandName: "KYVORA",
@@ -21,8 +28,10 @@ export const legalConfig = {
     rutPlaceholder: "RUT 1112151335-7",
     cityDomicile: "Yotoco, Valle del Cauca, Colombia",
     physicalAddressPlaceholder: "Calle 5 # 7-63",
-    contactEmail: "danielcanizales@kyvora.net.co - juand08@kyvora.net.co",
-    legalEmail: "kyvorasas@gmail.com - danielcanizales@kyvora.net.co",
+    contactEmail,
+    contactEmailHref: formatMailto(contactEmail),
+    legalEmail,
+    legalEmailHref: formatMailto(legalEmail),
     phone: "+57 315 201 1203 - +57 318 324 8279",
   },
 

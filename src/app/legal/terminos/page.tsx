@@ -30,7 +30,7 @@ export default function TerminosPage() {
           <div><strong className="text-white font-medium">Dirección de correspondencia:</strong> <span className="font-mono text-amber-400/90">{legalConfig.owner.physicalAddressPlaceholder}</span></div>
           <div>
             <strong className="text-white font-medium">Correo electrónico de contacto:</strong>{" "}
-            <a href={`mailto:${legalConfig.owner.contactEmail}`} className="text-[var(--color-accent-cyan)] underline">
+            <a href={legalConfig.owner.contactEmailHref} className="text-[var(--color-accent-cyan)] underline">
               {legalConfig.owner.contactEmail}
             </a>
           </div>

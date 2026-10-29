@@ -119,7 +119,7 @@ export default function DonateLegalPage() {
             Si por intermitencias de red, caídas de conexión durante el checkout o errores del sistema bancario se generara un <strong>cargo duplicado, cobro no reconocido o inconsistencia transaccional comprobable</strong>, el aportante podrá notificar a KYVORA dentro de los <strong>cinco (5) días hábiles</strong> siguientes a la operación:
           </p>
           <ul className="list-disc pl-6 space-y-1 text-xs text-foreground-muted">
-            <li>Enviando un correo a <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> o radicando la solicitud en el <Link href="/legal/pqrs" className="text-[var(--color-accent-cyan)] underline">Canal PQRS</Link>.</li>
+            <li>Enviando un correo a <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> o radicando la solicitud en el <Link href="/legal/pqrs" className="text-[var(--color-accent-cyan)] underline">Canal PQRS</Link>.</li>
             <li>Adjuntando la referencia de pago de Wompi (<code>KYV-DON-...</code>) y el extracto bancario donde se evidencie la duplicidad del cargo.</li>
           </ul>
           <p className="text-foreground-muted text-xs leading-relaxed">

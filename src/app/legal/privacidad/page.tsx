@@ -30,7 +30,7 @@ export default function PrivacidadPage() {
           <div><strong className="text-white font-medium">Dirección física de notificación:</strong> <span className="font-mono text-amber-400/90">{legalConfig.owner.physicalAddressPlaceholder}</span></div>
           <div>
             <strong className="text-white font-medium">Correo electrónico oficial:</strong>{" "}
-            <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">
+            <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">
               {legalConfig.owner.legalEmail}
             </a>
           </div>
@@ -80,7 +80,7 @@ export default function PrivacidadPage() {
         <ul className="list-disc pl-6 space-y-2 text-sm text-foreground-muted">
           <li>
             <strong>Correo electrónico directo:</strong>{" "}
-            <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">
+            <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">
               {legalConfig.owner.legalEmail}
             </a>{" "}
             (Asunto: &ldquo;Ejercicio de Derechos Hábeas Data&rdquo;).

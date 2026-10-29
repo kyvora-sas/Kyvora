@@ -31,7 +31,7 @@ export function calculateIntegritySignature(
   currency: string = "COP",
   integritySecret?: string
 ): string {
-  const secret = integritySecret || process.env.WOMPI_INTEGRITY_SECRET || "";
+  const secret = integritySecret || process.env.WOMPI_INTEGRITY_SECRET || process.env.WOMPI_INTEGRITY_KEY || "";
   if (!secret) {
     throw new Error("WOMPI_INTEGRITY_SECRET no está configurado en las variables de entorno del servidor.");
   }
@@ -52,7 +52,7 @@ export function verifyWebhookChecksum(
   eventPayload: Record<string, unknown>,
   eventsSecret?: string
 ): { isValid: boolean; reason?: string } {
-  const secret = eventsSecret || process.env.WOMPI_EVENTS_SECRET || "";
+  const secret = eventsSecret || process.env.WOMPI_EVENTS_SECRET || process.env.WOMPI_EVENT_SECRET || "";
   if (!secret) {
     return { isValid: false, reason: "WOMPI_EVENTS_SECRET no configurado en servidor" };
   }

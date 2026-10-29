@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     // 1. Verificación de configuración del secreto de eventos
-    const eventsSecret = process.env.WOMPI_EVENTS_SECRET;
+    const eventsSecret = process.env.WOMPI_EVENTS_SECRET || process.env.WOMPI_EVENT_SECRET;
     if (!eventsSecret) {
       console.error("[webhook/wompi] Error crítico de configuración: WOMPI_EVENTS_SECRET no está definida.");
       return NextResponse.json(

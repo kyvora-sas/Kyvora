@@ -58,12 +58,12 @@ export async function POST(request: Request) {
     const currency = wompiConfig.currency;
 
     // 4. Clave pública y secreto de integridad desde variables de entorno estrictas
-    const publicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
-    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET;
+    const publicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || process.env.WOMPI_PUBLIC_KEY;
+    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET || process.env.WOMPI_INTEGRITY_KEY;
 
     if (!publicKey || !integritySecret) {
       console.error(
-        "[api/donate/create-transaction] Faltan variables de entorno: NEXT_PUBLIC_WOMPI_PUBLIC_KEY o WOMPI_INTEGRITY_SECRET no están definidas."
+        "[api/donate/create-transaction] Faltan variables de entorno: NEXT_PUBLIC_WOMPI_PUBLIC_KEY (o WOMPI_PUBLIC_KEY) y WOMPI_INTEGRITY_SECRET deben estar definidas."
       );
       return NextResponse.json(
         {

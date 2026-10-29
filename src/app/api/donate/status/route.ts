@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       "sandbox"
     ).toLowerCase() === "production" ? "production" : "sandbox";
 
-    const privateKey = process.env.WOMPI_PRIVATE_KEY;
+    const privateKey = process.env.WOMPI_PRIVATE_KEY || process.env.WOMPI_PRV_KEY;
     const hasPostgres = Boolean(process.env.DATABASE_URL || process.env.POSTGRES_URL);
 
     // Registro de diagnóstico seguro (sin secretos ni información personal)

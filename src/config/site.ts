@@ -14,11 +14,11 @@ export const siteConfig = {
   url: "https://www.kyvora.net.co",
   country: "Colombia",
   currency: "COP",
-  
+
   contacts: {
-    whatsappNumber: "+57 315 201 1203",
+    whatsappNumber: "+57 315 201 1203 - +57 318 324 8279",
     whatsappUrl: "https://wa.me/573152011203?text=Hola%20Kyvora,%20me%20gustar%C3%ADa%20conversar%20sobre%20un%20proyecto",
-    email: "kyvorasas@gmail.com",
+    email: "kyvorasas@gmail.com - danielcanizales@kyvora.net.co - juand08@kyvora.net.co",
     githubUrl: "https://github.com/kyvora-sas",
     instagramUrl: "https://www.instagram.com/_kyvora_/",
     sicUrl: "https://www.sic.gov.co/",

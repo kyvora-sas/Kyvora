@@ -21,8 +21,8 @@ export const legalConfig = {
     rutPlaceholder: "RUT 1112151335-7",
     cityDomicile: "Yotoco, Valle del Cauca, Colombia",
     physicalAddressPlaceholder: "Calle 5 # 7-63",
-    contactEmail: "kyvorasas@gmail.com",
-    legalEmail: "kyvorasas@gmail.com",
+    contactEmail: "danielcanizales@kyvora.net.co - juand08@kyvora.net.co",
+    legalEmail: "kyvorasas@gmail.com - danielcanizales@kyvora.net.co",
     phone: "+57 315 201 1203 - +57 318 324 8279",
   },
 

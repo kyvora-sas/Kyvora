@@ -92,7 +92,8 @@ Configura estas variables en `.env.local` (desarrollo) y en las variables de ent
 
 Wompi Checkout Web permite especificar la URL de redirección en el query param `redirect-url`.
 
-- **Producción:** Se envía `https://www.kyvora.net.co/donate/resultado?reference=KYV-DON-...`. Si por error de configuración `NEXT_PUBLIC_SITE_URL` estuviera en `localhost`, el servidor detecta el entorno de producción y fuerza la URL canónica `https://www.kyvora.net.co`.
+- **Producción (`VERCEL_ENV=production`):** Se envía de forma determinista e inequívoca `https://www.kyvora.net.co/donate/resultado?reference=KYV-DON-...`. El servidor ignora de forma estricta cualquier valor en `NEXT_PUBLIC_SITE_URL` o `VERCEL_URL` que apunte a dominios de Vercel (`*.vercel.app`) o `localhost`, forzando la URL canónica `https://www.kyvora.net.co`. No se confía en encabezados del cliente (`Host`, `x-forwarded-host`) previniendo vulnerabilidades de Open Redirect.
+- **Preview (`VERCEL_ENV=preview`):** Se envía la URL del despliegue o rama preview de Vercel (obtenida de `VERCEL_BRANCH_URL` o `VERCEL_URL`), garantizando que las pruebas en ramas mantengan aislamiento y no redirijan accidentalmente a producción.
 - **Desarrollo Local (`localhost` / `127.0.0.1`):** La regla WAF anti-SSRF de AWS CloudFront en `checkout.wompi.co` bloquea con HTTP 403 las peticiones GET cuyos query params contengan `localhost` o direcciones loopback. Por ello, en desarrollo local el parámetro `redirect-url` se omite de la URL de checkout. El usuario puede utilizar la URL por defecto configurada en el panel o sincronizar con su ID de transacción en la pantalla de resultado.
 - **Túneles de Desarrollo:** Si se configura una URL pública HTTPS en `NEXT_PUBLIC_SITE_URL` (por ejemplo `https://kyvora.ngrok-free.app`), `redirect-url` se incluye automáticamente sin bloqueos de WAF.
 

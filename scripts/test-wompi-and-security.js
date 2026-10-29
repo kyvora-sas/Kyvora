@@ -872,10 +872,11 @@ function testEnterpriseFlowRequirements() {
   // 2 y 3. URL de retorno correcta según el entorno (Producción HTTPS vs Local)
   const refTest = "KYV-DON-GEN-1730000000-TEST";
   function resolveRedirectUrlTest(env, customSiteUrl) {
-    const isProd = env === "production";
-    const rawSiteUrl = customSiteUrl || (isProd ? "https://www.kyvora.net.co" : "http://localhost:3000");
+    if (env === "production") {
+      return "https://www.kyvora.net.co/donate/resultado?reference=" + encodeURIComponent(refTest);
+    }
+    const rawSiteUrl = customSiteUrl || "http://localhost:3000";
     const isLocal = rawSiteUrl.includes("localhost") || rawSiteUrl.includes("127.0.0.1");
-    if (isProd && isLocal) return "https://www.kyvora.net.co/donate/resultado?reference=" + encodeURIComponent(refTest);
     if (isLocal) return undefined;
     return `${rawSiteUrl.replace(/\/+$/, "")}/donate/resultado?reference=${encodeURIComponent(refTest)}`;
   }
@@ -883,6 +884,10 @@ function testEnterpriseFlowRequirements() {
   assert(
     resolveRedirectUrlTest("production", "https://www.kyvora.net.co") === "https://www.kyvora.net.co/donate/resultado?reference=" + encodeURIComponent(refTest),
     "[Escenario 2] Creación de checkout en Producción incluye redirect-url canónica https://www.kyvora.net.co/donate/resultado"
+  );
+  assert(
+    resolveRedirectUrlTest("production", "https://kyvora-o24ks6ecj-kyvora3.vercel.app") === "https://www.kyvora.net.co/donate/resultado?reference=" + encodeURIComponent(refTest),
+    "[Escenario 2b-prod] Producción ignora dominios de despliegue *.vercel.app y fuerza https://www.kyvora.net.co/donate/resultado"
   );
   assert(
     resolveRedirectUrlTest("development", "http://localhost:3000") === undefined,
@@ -1425,6 +1430,244 @@ async function testMissionCritical12Requirements() {
   );
 }
 
+// 13. Verificación de Política Inequívoca de URL de Retorno de Wompi (Tarea 6)
+function testWompiReturnUrlPolicy() {
+  console.log(`\n${CYAN}--- Verificación de Política Inequívoca de URL de Retorno de Wompi (Tarea 6) ---${RESET}`);
+
+  const CANONICAL_PROD = "https://www.kyvora.net.co";
+  const ref = "KYV-DON-GEN-1793169885598-E1AE244A";
+
+  function isLocalUrl(urlStr) {
+    try {
+      const parsed = new URL(urlStr);
+      const hostname = parsed.hostname.toLowerCase();
+      if (hostname === "localhost" || hostname.endsWith(".localhost")) return true;
+      if (hostname.startsWith("127.")) return true;
+      if (
+        hostname === "::1" ||
+        hostname === "[::1]" ||
+        hostname === "0:0:0:0:0:0:0:1" ||
+        hostname === "[0:0:0:0:0:0:0:1]"
+      ) {
+        return true;
+      }
+      if (hostname === "0.0.0.0") return true;
+      return false;
+    } catch {
+      return true;
+    }
+  }
+
+  function isKyvoraDomain(urlStr) {
+    try {
+      const hostname = new URL(urlStr).hostname.toLowerCase();
+      return hostname === "www.kyvora.net.co" || hostname === "kyvora.net.co";
+    } catch {
+      return false;
+    }
+  }
+
+  function getWompiReturnBaseUrl(options) {
+    const vercelEnv = (options?.vercelEnv ?? process.env.VERCEL_ENV)?.toLowerCase().trim();
+    const nodeEnv = (options?.nodeEnv ?? process.env.NODE_ENV)?.toLowerCase().trim();
+    const siteUrl = (options?.siteUrl ?? process.env.NEXT_PUBLIC_SITE_URL)?.trim();
+    const vercelUrl = (options?.vercelUrl ?? process.env.VERCEL_URL)?.trim();
+    const vercelBranchUrl = (options?.vercelBranchUrl ?? process.env.VERCEL_BRANCH_URL)?.trim();
+
+    if (vercelEnv === "production") {
+      return CANONICAL_PROD;
+    }
+
+    if (vercelEnv === "preview") {
+      const rawPreviewHost = vercelBranchUrl || vercelUrl;
+      if (rawPreviewHost) {
+        const cleanHost = rawPreviewHost.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+        return `https://${cleanHost}`;
+      }
+      if (siteUrl && !isLocalUrl(siteUrl) && !isKyvoraDomain(siteUrl)) {
+        return siteUrl.replace(/\/+$/, "");
+      }
+      return undefined;
+    }
+
+    if (nodeEnv === "production" && siteUrl && isKyvoraDomain(siteUrl)) {
+      return CANONICAL_PROD;
+    }
+
+    const isLocal = !siteUrl || isLocalUrl(siteUrl);
+    if (isLocal) {
+      return undefined;
+    }
+
+    try {
+      const parsed = new URL(siteUrl);
+      if (parsed.protocol === "https:") {
+        return siteUrl.replace(/\/+$/, "");
+      }
+    } catch {
+      return undefined;
+    }
+
+    return undefined;
+  }
+
+  function buildWompiReturnUrl(reference, options) {
+    const baseUrl = getWompiReturnBaseUrl(options);
+    if (!baseUrl) return undefined;
+    const sanitized = baseUrl.trim().replace(/\/+$/, "");
+    return `${sanitized}/donate/resultado?reference=${encodeURIComponent(reference)}`;
+  }
+
+  // 1. En Production, la URL SIEMPRE utiliza www.kyvora.net.co
+  const prodFromVercelApp = buildWompiReturnUrl(ref, {
+    vercelEnv: "production",
+    siteUrl: "https://kyvora-o24ks6ecj-kyvora3.vercel.app",
+    vercelUrl: "web-kyvora-3k1j2h3.vercel.app",
+  });
+  assert(
+    prodFromVercelApp === `https://www.kyvora.net.co/donate/resultado?reference=${ref}`,
+    "[Política Retorno 1a] En Producción (Vercel), ignora NEXT_PUBLIC_SITE_URL con *.vercel.app y fuerza www.kyvora.net.co"
+  );
+
+  const prodFromLocalhost = buildWompiReturnUrl(ref, {
+    vercelEnv: "production",
+    siteUrl: "http://localhost:3000",
+  });
+  assert(
+    prodFromLocalhost === `https://www.kyvora.net.co/donate/resultado?reference=${ref}`,
+    "[Política Retorno 1b] En Producción, previene fuga de localhost y fuerza www.kyvora.net.co"
+  );
+
+  const prodEmpty = buildWompiReturnUrl(ref, {
+    vercelEnv: "production",
+  });
+  assert(
+    prodEmpty === `https://www.kyvora.net.co/donate/resultado?reference=${ref}`,
+    "[Política Retorno 1c] En Producción sin variables de URL, retorna www.kyvora.net.co de forma determinista"
+  );
+
+  // 2. En Preview, no se usa accidentalmente el dominio de producción si el entorno necesita volver a Preview
+  const previewBranch = buildWompiReturnUrl(ref, {
+    vercelEnv: "preview",
+    vercelBranchUrl: "web-kyvora-git-fix-wompi-branch.vercel.app",
+    vercelUrl: "web-kyvora-d8sf9a7.vercel.app",
+    siteUrl: "https://www.kyvora.net.co",
+  });
+  assert(
+    previewBranch === `https://web-kyvora-git-fix-wompi-branch.vercel.app/donate/resultado?reference=${ref}`,
+    "[Política Retorno 2a] En Preview con VERCEL_BRANCH_URL, utiliza la URL del branch preview y NO la de producción"
+  );
+
+  const previewDeployment = buildWompiReturnUrl(ref, {
+    vercelEnv: "preview",
+    vercelUrl: "web-kyvora-d8sf9a7.vercel.app",
+  });
+  assert(
+    previewDeployment === `https://web-kyvora-d8sf9a7.vercel.app/donate/resultado?reference=${ref}`,
+    "[Política Retorno 2b] En Preview con VERCEL_URL, utiliza la URL específica del deployment preview"
+  );
+
+  // 3. En desarrollo local, se conserva el comportamiento adecuado (omite redirect-url para evitar 403 WAF)
+  const localDefault = buildWompiReturnUrl(ref, {
+    vercelEnv: "development",
+    nodeEnv: "development",
+    siteUrl: "http://localhost:3000",
+  });
+  assert(
+    localDefault === undefined,
+    "[Política Retorno 3a] En desarrollo local con localhost:3000, retorna undefined (omite redirect-url)"
+  );
+
+  const localIp = buildWompiReturnUrl(ref, {
+    nodeEnv: "development",
+    siteUrl: "http://127.0.0.1:3000",
+  });
+  assert(
+    localIp === undefined,
+    "[Política Retorno 3b] En desarrollo local con 127.0.0.1, retorna undefined para evitar 403 SSRF de WAF"
+  );
+
+  const localUnset = buildWompiReturnUrl(ref, {
+    nodeEnv: "development",
+  });
+  assert(
+    localUnset === undefined,
+    "[Política Retorno 3c] En desarrollo local sin siteUrl configurado, retorna undefined de forma segura"
+  );
+
+  // 3d. Desarrollo con túnel público HTTPS
+  const localTunnel = buildWompiReturnUrl(ref, {
+    nodeEnv: "development",
+    siteUrl: "https://kyvora.ngrok-free.app",
+  });
+  assert(
+    localTunnel === `https://kyvora.ngrok-free.app/donate/resultado?reference=${ref}`,
+    "[Política Retorno 3d] En desarrollo con túnel HTTPS explícito (ngrok), retorna la URL del túnel"
+  );
+
+  // 4. No se permiten dominios de retorno arbitrarios proporcionados por el usuario
+  const routeContent = fs.readFileSync(path.join(process.cwd(), "src", "app", "api", "donate", "create-transaction", "route.ts"), "utf8");
+  const ignoresClientHost =
+    !routeContent.includes("request.headers.get(\"host\")") &&
+    !routeContent.includes("request.headers.get(\"x-forwarded-host\")") &&
+    !routeContent.includes("headers.get(\"host\")") &&
+    !routeContent.includes("headers.get(\"x-forwarded-host\")");
+  assert(
+    ignoresClientHost,
+    "[Política Retorno 4a] create-transaction ignora encabezados Host y x-forwarded-host para evitar Open Redirect"
+  );
+
+  const ignoresClientBodyReturnUrl =
+    !routeContent.includes("body.redirectUrl") &&
+    !routeContent.includes("body.returnUrl") &&
+    !routeContent.includes("body.siteUrl");
+  assert(
+    ignoresClientBodyReturnUrl,
+    "[Política Retorno 4b] create-transaction no admite parámetros arbitrarios de retorno en el body del cliente"
+  );
+
+  assert(
+    routeContent.includes("buildWompiReturnUrl(reference)"),
+    "[Política Retorno 4c] create-transaction utiliza buildWompiReturnUrl(reference) para gobernar el redirect"
+  );
+
+  // 5. La referencia y los parámetros de retorno continúan funcionando
+  const simulatedReturnWithWompiId = `https://www.kyvora.net.co/donate/resultado?reference=${ref}&id=tx-wompi-real-123`;
+  const parsedUrl = new URL(simulatedReturnWithWompiId);
+  assert(
+    parsedUrl.searchParams.get("reference") === ref,
+    "[Política Retorno 5a] URL de retorno preserva el parámetro de referencia exacto"
+  );
+  assert(
+    parsedUrl.searchParams.get("id") === "tx-wompi-real-123",
+    "[Política Retorno 5b] Parámetro de transacción 'id' inyectado por Wompi es preservado tras el retorno"
+  );
+
+  const doubleQueryReturn = `https://www.kyvora.net.co/donate/resultado?reference=${ref}?id=tx-wompi-real-123`;
+  const urlObj = new URL(doubleQueryReturn);
+  function parseParams(searchParams) {
+    let r = searchParams.get("reference")?.trim() || null;
+    let t = searchParams.get("id")?.trim() || null;
+    if (r) {
+      if (r.includes("?id=")) {
+        const [refP, idP] = r.split("?id=");
+        r = refP.trim() || null;
+        if (!t && idP) t = idP.trim() || null;
+      } else if (r.includes("&id=")) {
+        const [refP, idP] = r.split("&id=");
+        r = refP.trim() || null;
+        if (!t && idP) t = idP.trim() || null;
+      }
+    }
+    return { reference: r, transactionId: t };
+  }
+  const extracted = parseParams(urlObj.searchParams);
+  assert(
+    extracted.reference === ref && extracted.transactionId === "tx-wompi-real-123",
+    "[Política Retorno 5c] Recuperación resiliente de referencia e ID ante concatenación imperfecta de Wompi"
+  );
+}
+
 // Ejecución
 async function runAll() {
   testIntegritySignature();
@@ -1439,6 +1682,7 @@ async function runAll() {
   await testPostgresAndProductionSafety();
   testRegressionReturnParamsAndStatusDifferentiation();
   await testMissionCritical12Requirements();
+  testWompiReturnUrlPolicy();
 
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`Resultados: ${GREEN}${passedCount} pasaron${RESET}, ${failedCount > 0 ? RED : GREEN}${failedCount} fallaron${RESET}`);

@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { wompiConfig } from "@/config/wompi";
+import { siteConfig } from "@/config/site";
 
 /**
  * Genera una referencia única para la transacción.
@@ -149,6 +150,111 @@ export function isLocalOrLoopbackUrl(urlStr: string): boolean {
     // Si la cadena no es una URL parseable válida, se asume insegura
     return true;
   }
+}
+
+export interface WompiReturnUrlOptions {
+  vercelEnv?: string;
+  nodeEnv?: string;
+  vercelUrl?: string;
+  vercelBranchUrl?: string;
+  siteUrl?: string;
+}
+
+/**
+ * Valida si una URL pertenece formalmente a los dominios autorizados de KYVORA.
+ */
+export function isKyvoraDomain(urlStr: string): boolean {
+  try {
+    const hostname = new URL(urlStr).hostname.toLowerCase();
+    return (
+      hostname === "www.kyvora.net.co" ||
+      hostname === "kyvora.net.co"
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Determina de manera determinista e inequívoca la URL base para el retorno de Wompi.
+ * Política de entornos:
+ * 1. Producción: Si VERCEL_ENV === "production", SIEMPRE retorna el dominio canónico de KYVORA (https://www.kyvora.net.co).
+ *    Se ignora cualquier valor en NEXT_PUBLIC_SITE_URL o VERCEL_URL que contenga dominios efímeros (*.vercel.app)
+ *    para garantizar que en producción el usuario regrese única y exclusivamente al dominio oficial.
+ * 2. Preview: Si VERCEL_ENV === "preview", utiliza la URL pública del deployment o branch preview de Vercel
+ *    (VERCEL_BRANCH_URL o VERCEL_URL o siteUrl si es un subdominio preview HTTPS), permitiendo pruebas aisladas.
+ * 3. Desarrollo local / Loopback: Si el entorno es local o la URL resultante es localhost/loopback (127.0.0.1, ::1, etc.),
+ *    retorna undefined para omitir el parámetro redirect-url y evitar el error 403 (SSRF) de CloudFront AWS WAF en Wompi.
+ *    Si en desarrollo se configura un túnel público seguro explícito (ej. ngrok, loca.lt), se usa dicho túnel.
+ * 4. Seguridad: NUNCA se confía en encabezados de la petición del cliente (Host, x-forwarded-host) ni en
+ *    parámetros provistos por el usuario, previniendo vulnerabilidades de Open Redirect.
+ */
+export function getWompiReturnBaseUrl(options?: WompiReturnUrlOptions): string | undefined {
+  const vercelEnv = (options?.vercelEnv ?? process.env.VERCEL_ENV)?.toLowerCase().trim();
+  const nodeEnv = (options?.nodeEnv ?? process.env.NODE_ENV)?.toLowerCase().trim();
+  const siteUrl = (options?.siteUrl ?? process.env.NEXT_PUBLIC_SITE_URL)?.trim();
+  const vercelUrl = (options?.vercelUrl ?? process.env.VERCEL_URL)?.trim();
+  const vercelBranchUrl = (options?.vercelBranchUrl ?? process.env.VERCEL_BRANCH_URL)?.trim();
+
+  // 1. Producción en Vercel:
+  // Forzar siempre https://www.kyvora.net.co sin importar si NEXT_PUBLIC_SITE_URL apunta a *.vercel.app
+  if (vercelEnv === "production") {
+    return siteConfig.url;
+  }
+
+  // 2. Entorno Preview en Vercel:
+  if (vercelEnv === "preview") {
+    const rawPreviewHost = vercelBranchUrl || vercelUrl;
+    if (rawPreviewHost) {
+      const cleanHost = rawPreviewHost.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+      return `https://${cleanHost}`;
+    }
+    if (siteUrl && !isLocalOrLoopbackUrl(siteUrl) && !isKyvoraDomain(siteUrl)) {
+      return siteUrl.replace(/\/+$/, "");
+    }
+    return undefined;
+  }
+
+  // 3. Producción fuera de Vercel (servidor dedicado o contenedor con dominio configurado)
+  if (nodeEnv === "production" && siteUrl && isKyvoraDomain(siteUrl)) {
+    return siteConfig.url;
+  }
+
+  // 4. Desarrollo local o sin URL pública configurada:
+  const isLocal = !siteUrl || isLocalOrLoopbackUrl(siteUrl);
+  if (isLocal) {
+    return undefined;
+  }
+
+  // 5. Túnel público HTTPS para desarrollo (ngrok, loca.lt, etc.)
+  try {
+    const parsed = new URL(siteUrl);
+    if (parsed.protocol === "https:") {
+      return siteUrl.replace(/\/+$/, "");
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Construye la URL de retorno completa para Wompi Checkout.
+ * Ejemplo: https://www.kyvora.net.co/donate/resultado?reference=KYV-DON-...
+ * Si el entorno es local (o no tiene URL pública), devuelve undefined para que
+ * buildWompiCheckoutUrl omita el parámetro redirect-url.
+ */
+export function buildWompiReturnUrl(
+  reference: string,
+  options?: WompiReturnUrlOptions
+): string | undefined {
+  const baseUrl = getWompiReturnBaseUrl(options);
+  if (!baseUrl) {
+    return undefined;
+  }
+  const sanitized = baseUrl.trim().replace(/\/+$/, "");
+  return `${sanitized}/donate/resultado?reference=${encodeURIComponent(reference)}`;
 }
 
 /**

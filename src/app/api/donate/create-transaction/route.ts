@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { wompiConfig } from "@/config/wompi";
-import { siteConfig } from "@/config/site";
 import {
   generateReference,
   copToCents,
   calculateIntegritySignature,
   buildWompiCheckoutUrl,
-  isLocalOrLoopbackUrl,
+  buildWompiReturnUrl,
 } from "@/lib/wompi";
 import { transactionStore } from "@/lib/transactions-store";
 
@@ -82,18 +81,13 @@ export async function POST(request: Request) {
       integritySecret
     );
 
-    // 6. URL de retorno tras el pago
-    // En producción (Vercel o dominio público), se garantiza HTTPS y la URL canónica de KYVORA (https://www.kyvora.net.co/donate/resultado?reference=...).
-    // En desarrollo local (localhost), CloudFront / AWS WAF en checkout.wompi.co bloquea con 403 (regla SSRF) peticiones GET que incluyan loopbacks en query params.
-    // Para entornos locales se omite redirect-url en el query param para evitar el bloqueo 403; en entornos públicos HTTPS, se incluye siempre.
+    // 6. URL de retorno tras el pago con política inequívoca de entornos
+    // - En Producción (VERCEL_ENV=production): Se garantiza siempre https://www.kyvora.net.co/donate/resultado?reference=...
+    // - En Preview (VERCEL_ENV=preview): Se utiliza la URL del deployment preview correspondiente para pruebas aisladas.
+    // - En Desarrollo local (localhost): Se omite redirect-url para evitar el bloqueo 403 de CloudFront WAF en checkout.wompi.co.
+    // - Jamás se confía en encabezados del cliente (Host, x-forwarded-host) ni en el cuerpo de la petición.
     const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
-    const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
-    const siteUrl = isProd && isLocalOrLoopbackUrl(rawSiteUrl) ? siteConfig.url : rawSiteUrl;
-    const isLocal = isLocalOrLoopbackUrl(siteUrl);
-    const sanitizedBase = siteUrl.trim().replace(/\/+$/, "");
-    const redirectUrl = isLocal
-      ? undefined
-      : `${sanitizedBase}/donate/resultado?reference=${encodeURIComponent(reference)}`;
+    const redirectUrl = buildWompiReturnUrl(reference);
 
     console.info("[api/donate/create-transaction] Creando intención de donación:", {
       reference,

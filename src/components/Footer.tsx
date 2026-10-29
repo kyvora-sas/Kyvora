@@ -73,7 +73,7 @@ export default function Footer() {
                 <MessageCircle className="w-4 h-4 text-emerald-400" />
               </a>
               <a
-                href={siteConfig.contacts.emailHref}
+                href={`mailto:${siteConfig.contacts.email}`}
                 className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
                 aria-label="Correo de contacto de KYVORA"
               >

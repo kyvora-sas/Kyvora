@@ -2458,63 +2458,6 @@ async function testSecurityAuditRemediation() {
   }
 }
 
-// 15. Formateo y estandarización RFC 6068 de enlaces mailto:
-function testMailtoFormatting() {
-  const formatTsPath = path.join(__dirname, "../src/lib/format.ts");
-  assert(fs.existsSync(formatTsPath), "src/lib/format.ts existe en el repositorio");
-
-  const formatCode = fs.readFileSync(formatTsPath, "utf8");
-  assert(
-    formatCode.includes("export function formatMailto"),
-    "src/lib/format.ts exporta la función formatMailto"
-  );
-
-  function formatMailto(emails) {
-    if (!emails || typeof emails !== "string") return "mailto:";
-    const matches = emails.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
-    if (!matches || matches.length === 0) return `mailto:${emails.trim()}`;
-    const uniqueEmails = Array.from(new Set(matches));
-    return `mailto:${uniqueEmails.join(",")}`;
-  }
-
-  const multiHyphenEmails = "kyvorasas@gmail.com - danielcanizales@kyvora.net.co - juand08@kyvora.net.co";
-  const resultMulti = formatMailto(multiHyphenEmails);
-  assert(
-    resultMulti === "mailto:kyvorasas@gmail.com,danielcanizales@kyvora.net.co,juand08@kyvora.net.co",
-    "[RFC-6068] Cadena con múltiples correos separados por ' - ' es convertida en lista separada por comas sin espacios ni guiones"
-  );
-
-  const singleEmail = "contacto@kyvora.net.co";
-  assert(
-    formatMailto(singleEmail) === "mailto:contacto@kyvora.net.co",
-    "[RFC-6068] Correo único genera enlace mailto directo estándar"
-  );
-
-  const duplicateEmails = "info@kyvora.net.co - info@kyvora.net.co - admin@kyvora.net.co";
-  assert(
-    formatMailto(duplicateEmails) === "mailto:info@kyvora.net.co,admin@kyvora.net.co",
-    "[RFC-6068] Correos repetidos son deduplicados preservando el orden"
-  );
-
-  const dashedUserAndDomain = "lead-dev@sub-domain.kyvora.net.co - team@kyvora.net.co";
-  assert(
-    formatMailto(dashedUserAndDomain) === "mailto:lead-dev@sub-domain.kyvora.net.co,team@kyvora.net.co",
-    "[RFC-6068] Correos con guiones en el nombre de usuario o dominio son preservados íntegramente"
-  );
-
-  const contactSectionCode = fs.readFileSync(path.join(__dirname, "../src/components/ContactSection.tsx"), "utf8");
-  assert(
-    !contactSectionCode.includes("mailto:${siteConfig.contacts.email}"),
-    "ContactSection.tsx utiliza emailHref estandarizado en lugar de concatenación directa"
-  );
-
-  const footerCode = fs.readFileSync(path.join(__dirname, "../src/components/Footer.tsx"), "utf8");
-  assert(
-    !footerCode.includes("mailto:${siteConfig.contacts.email}"),
-    "Footer.tsx utiliza emailHref estandarizado en lugar de concatenación directa"
-  );
-}
-
 // Ejecución
 async function runAll() {
   testIntegritySignature();
@@ -2531,7 +2474,6 @@ async function runAll() {
   await testMissionCritical12Requirements();
   testWompiReturnUrlPolicy();
   await testSecurityAuditRemediation();
-  testMailtoFormatting();
 
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`Resultados: ${GREEN}${passedCount} pasaron${RESET}, ${failedCount > 0 ? RED : GREEN}${failedCount} fallaron${RESET}`);

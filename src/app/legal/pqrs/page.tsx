@@ -350,7 +350,7 @@ export default function PqrsPage() {
         <ul className="list-disc pl-6 space-y-2 text-sm text-foreground-muted font-light">
           <li>
             <strong>Correo electrónico directo de atención:</strong>{" "}
-            <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline font-medium">
+            <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline font-medium">
               {legalConfig.owner.legalEmail}
             </a>
           </li>

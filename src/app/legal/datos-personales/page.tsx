@@ -33,7 +33,7 @@ export default function DatosPersonalesPage() {
           <div><strong className="text-white font-medium">Dirección de correspondencia física:</strong> <span className="font-mono text-amber-400/90">{legalConfig.owner.physicalAddressPlaceholder}</span></div>
           <div>
             <strong className="text-white font-medium">Correo electrónico exclusivo para Hábeas Data:</strong>{" "}
-            <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">
+            <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">
               {legalConfig.owner.legalEmail}
             </a>
           </div>
@@ -80,7 +80,7 @@ export default function DatosPersonalesPage() {
         <p>
           En observancia del principio de libertad y necesidad, KYVORA recopila exclusivamente los datos pertinentes y adecuados para finalidades previamente informadas. Se diferencian las siguientes categorías:
         </p>
-
+        
         <div className="space-y-4 bg-surface p-6 rounded-xl border border-white/10">
           <div>
             <h3 className="font-semibold text-white text-base">A. Datos de Contacto y Solicitudes Comerciales</h3>
@@ -174,7 +174,7 @@ export default function DatosPersonalesPage() {
           Los titulares o sus causahabientes debidamente acreditados podrán ejercer sus derechos a través de los siguientes canales oficiales:
         </p>
         <ul className="list-disc pl-6 space-y-1 text-sm text-foreground-muted">
-          <li><strong>Correo electrónico institucional:</strong> <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a></li>
+          <li><strong>Correo electrónico institucional:</strong> <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a></li>
           <li><strong>Formulario en línea:</strong> Módulo oficial de radicación en el <Link href="/legal/pqrs" className="text-[var(--color-accent-cyan)] underline">Canal PQRS</Link>.</li>
         </ul>
 

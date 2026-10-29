@@ -105,7 +105,7 @@ export default function PagosReversionesPage() {
             Cuando el consumidor ejerza el derecho de retracto de forma oportuna y procedente antes de que se haya iniciado la prestación del servicio acordado, KYVORA reintegrará la totalidad del dinero pagado por el consumidor, sin deducciones por descuentos ni penalizaciones de ninguna índole, en un término que no excederá de <strong>treinta (30) días calendario</strong> contados a partir del momento en que ejerció el derecho.
           </p>
           <p className="text-xs text-foreground-muted">
-            La solicitud de retracto debe remitirse por escrito al correo <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> o mediante el <Link href="/legal/pqrs" className="text-[var(--color-accent-cyan)] underline">Canal PQRS</Link>, indicando los datos del contrato y adjuntando la certificación bancaria para el reintegro.
+            La solicitud de retracto debe remitirse por escrito al correo <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> o mediante el <Link href="/legal/pqrs" className="text-[var(--color-accent-cyan)] underline">Canal PQRS</Link>, indicando los datos del contrato y adjuntando la certificación bancaria para el reintegro.
           </p>
         </div>
       </section>
@@ -134,7 +134,7 @@ export default function PagosReversionesPage() {
               <strong>Notificación al emisor del instrumento de pago:</strong> Dentro del mismo plazo de cinco (5) días hábiles, el consumidor deberá notificar al emisor del instrumento de pago electrónico (banco o entidad financiera de su tarjeta o cuenta), anexando constancia de la queja radicada ante KYVORA.
             </li>
             <li>
-              <strong>Contenido de la solicitud:</strong> La queja ante KYVORA deberá remitirse a <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> o mediante el <Link href="/legal/pqrs" className="text-[var(--color-accent-cyan)] underline">Canal PQRS</Link> e incluir:
+              <strong>Contenido de la solicitud:</strong> La queja ante KYVORA deberá remitirse a <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> o mediante el <Link href="/legal/pqrs" className="text-[var(--color-accent-cyan)] underline">Canal PQRS</Link> e incluir:
               <ul className="list-disc pl-6 mt-1 space-y-1">
                 <li>Manifestación expresa de las razones que fundamentan la solicitud de reversión del pago e indicación precisa de la causal legal invocada.</li>
                 <li>Valor por el cual se solicita la reversión.</li>
@@ -157,7 +157,7 @@ export default function PagosReversionesPage() {
           En los aportes económicos voluntarios realizados en el módulo Donate Us, pueden presentarse casos fortuitos de cobros duplicados por caídas intermitentes de red durante la confirmación con la entidad bancaria.
         </p>
         <p className="text-sm text-foreground-muted leading-relaxed">
-          En tales supuestos, el aportante debe enviar un correo a <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> con la referencia de pago y el comprobante del extracto donde figure el cobro doble. KYVORA verificará el balance en el panel de Wompi dentro de los dos (2) días hábiles siguientes y tramitará de inmediato la solicitud de anulación del cobro excedente ante la pasarela de pagos.
+          En tales supuestos, el aportante debe enviar un correo a <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">{legalConfig.owner.legalEmail}</a> con la referencia de pago y el comprobante del extracto donde figure el cobro doble. KYVORA verificará el balance en el panel de Wompi dentro de los dos (2) días hábiles siguientes y tramitará de inmediato la solicitud de anulación del cobro excedente ante la pasarela de pagos.
         </p>
       </section>
 
@@ -170,7 +170,7 @@ export default function PagosReversionesPage() {
             Canal Oficial de PQRS
           </Link>{" "}
           o escribiendo directamente a{" "}
-          <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline font-medium">
+          <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline font-medium">
             {legalConfig.owner.legalEmail}
           </a>.
         </p>

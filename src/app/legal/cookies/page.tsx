@@ -109,7 +109,7 @@ export default function CookiesPage() {
         <h2 className="text-2xl font-bold text-white tracking-tight">5. Dudas y Ejercicio de Derechos</h2>
         <p className="text-sm text-foreground-muted leading-relaxed">
           Para cualquier inquietud sobre la gestión de cookies o sobre la protección de su privacidad digital en KYVORA, puede remitir su consulta a nuestro correo electrónico{" "}
-          <a href={legalConfig.owner.legalEmailHref} className="text-[var(--color-accent-cyan)] underline">
+          <a href={`mailto:${legalConfig.owner.legalEmail}`} className="text-[var(--color-accent-cyan)] underline">
             {legalConfig.owner.legalEmail}
           </a>{" "}
           o consultar nuestra{" "}

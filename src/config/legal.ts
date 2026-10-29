@@ -23,7 +23,7 @@ export const legalConfig = {
     physicalAddressPlaceholder: "Calle 5 # 7-63",
     contactEmail: "kyvorasas@gmail.com",
     legalEmail: "kyvorasas@gmail.com",
-    phone: "+57 315 201 1203",
+    phone: "+57 315 201 1203 - +57 318 324 8279",
   },
 
   // Marco normativo aplicable verificado

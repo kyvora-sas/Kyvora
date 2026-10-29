@@ -22,22 +22,120 @@ export function copToCents(amountCOP: number): number {
 }
 
 /**
+ * Valida que el secreto de integridad coincida con el ambiente de la llave pública y no se confunda
+ * con la llave privada, el secreto de eventos o la llave pública.
+ */
+export function validateIntegritySecretForEnvironment(
+  integritySecret: string,
+  publicKey?: string,
+  environment?: string
+): { isValid: boolean; reason?: string } {
+  const secret = (integritySecret || "").trim().replace(/^["']|["']$/g, "");
+  if (!secret) {
+    return { isValid: false, reason: "El secreto de integridad (WOMPI_INTEGRITY_SECRET) no está configurado o está vacío." };
+  }
+
+  // Comprobación de confusión con otras credenciales
+  if (secret.startsWith("prv_")) {
+    return {
+      isValid: false,
+      reason: "Se configuró una llave privada (WOMPI_PRIVATE_KEY) en lugar del secreto de integridad (WOMPI_INTEGRITY_SECRET)."
+    };
+  }
+  if (secret.startsWith("pub_")) {
+    return {
+      isValid: false,
+      reason: "Se configuró la llave pública (NEXT_PUBLIC_WOMPI_PUBLIC_KEY) en lugar del secreto de integridad (WOMPI_INTEGRITY_SECRET)."
+    };
+  }
+  if (secret.includes("_events_")) {
+    return {
+      isValid: false,
+      reason: "Se configuró el secreto de eventos (WOMPI_EVENTS_SECRET) en lugar del secreto de integridad (WOMPI_INTEGRITY_SECRET)."
+    };
+  }
+
+  const cleanPubKey = (publicKey || "").trim();
+  const isProdKey = cleanPubKey.startsWith("pub_prod_");
+  const isTestKey = cleanPubKey.startsWith("pub_test_");
+
+  const cleanEnv = (environment || "").toLowerCase().trim();
+  const isProdEnv = cleanEnv === "production" || cleanEnv === "prod";
+
+  if ((isProdKey || isProdEnv) && secret.startsWith("test_integrity_")) {
+    return {
+      isValid: false,
+      reason: "Discrepancia de entorno: Se configuró un secreto de integridad de pruebas (test_integrity_...) en un ambiente o con llave pública de Producción (pub_prod_...)."
+    };
+  }
+
+  if ((isTestKey && !isProdEnv) && secret.startsWith("prod_integrity_")) {
+    return {
+      isValid: false,
+      reason: "Discrepancia de entorno: Se configuró un secreto de integridad de Producción (prod_integrity_...) con una llave pública de Sandbox (pub_test_...)."
+    };
+  }
+
+  if (!secret.startsWith("prod_integrity_") && !secret.startsWith("test_integrity_")) {
+    return {
+      isValid: false,
+      reason: "Formato de secreto de integridad desconocido. Debe iniciar con 'prod_integrity_' (Producción) o 'test_integrity_' (Sandbox)."
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
  * Calcula la firma de integridad oficial para el Checkout Web de Wompi.
  * Algoritmo oficial: SHA-256(reference + amount_in_cents + currency + integrity_secret)
+ * Si se utiliza fecha de expiración: SHA-256(reference + amount_in_cents + currency + expiration_time + integrity_secret)
  * Devuelve el hash en minúsculas hexadecimal.
  */
 export function calculateIntegritySignature(
   reference: string,
   amountInCents: number,
   currency: string = "COP",
-  integritySecret?: string
+  integritySecret?: string,
+  expirationTime?: string
 ): string {
-  const secret = integritySecret || process.env.WOMPI_INTEGRITY_SECRET || process.env.WOMPI_INTEGRITY_KEY || "";
+  const rawSecret = integritySecret || process.env.WOMPI_INTEGRITY_SECRET || process.env.WOMPI_INTEGRITY_KEY || "";
+  const secret = rawSecret.trim().replace(/^["']|["']$/g, "");
   if (!secret) {
     throw new Error("WOMPI_INTEGRITY_SECRET no está configurado en las variables de entorno del servidor.");
   }
 
-  const stringToSign = `${reference}${amountInCents}${currency}${secret}`;
+  // Validaciones estrictas de seguridad para prevenir confusión de credenciales
+  if (secret.startsWith("prv_")) {
+    throw new Error("Error de configuración: Se configuró una llave privada (WOMPI_PRIVATE_KEY) en lugar del secreto de integridad (WOMPI_INTEGRITY_SECRET).");
+  }
+  if (secret.startsWith("pub_")) {
+    throw new Error("Error de configuración: Se configuró una llave pública (NEXT_PUBLIC_WOMPI_PUBLIC_KEY) en lugar del secreto de integridad (WOMPI_INTEGRITY_SECRET).");
+  }
+  if (secret.includes("_events_")) {
+    throw new Error("Error de configuración: Se configuró el secreto de eventos (WOMPI_EVENTS_SECRET) en lugar del secreto de integridad (WOMPI_INTEGRITY_SECRET).");
+  }
+
+  const cleanRef = reference?.trim() || "";
+  if (!cleanRef) {
+    throw new Error("La referencia de pago no puede estar vacía.");
+  }
+
+  const cleanCurrency = (currency || "COP").trim().toUpperCase();
+  if (cleanCurrency !== "COP") {
+    throw new Error(`Moneda no soportada por Wompi para checkout de donaciones: ${cleanCurrency}. Se requiere COP.`);
+  }
+
+  const cleanAmount = Math.round(Number(amountInCents));
+  if (isNaN(cleanAmount) || cleanAmount <= 0) {
+    throw new Error("El importe en centavos debe ser un número entero mayor a cero.");
+  }
+
+  const cleanExpiration = expirationTime?.trim() || "";
+  const stringToSign = cleanExpiration
+    ? `${cleanRef}${cleanAmount}${cleanCurrency}${cleanExpiration}${secret}`
+    : `${cleanRef}${cleanAmount}${cleanCurrency}${secret}`;
+
   return crypto.createHash("sha256").update(stringToSign, "utf8").digest("hex");
 }
 
@@ -278,35 +376,50 @@ export function buildWompiCheckoutUrl(params: {
   currency: string;
   signature: string;
   redirectUrl?: string;
+  expirationTime?: string;
   customerData?: {
     email?: string;
     fullName?: string;
     phoneNumber?: string;
   };
 }): string {
+  const cleanPublicKey = params.publicKey.trim();
+  const cleanCurrency = params.currency.trim().toUpperCase();
+  const cleanAmountInCents = Math.round(params.amountInCents).toString();
+  const cleanReference = params.reference.trim();
+  const cleanSignature = params.signature.trim();
+
   const query = new URLSearchParams({
-    "public-key": params.publicKey,
-    currency: params.currency,
-    "amount-in-cents": params.amountInCents.toString(),
-    reference: params.reference,
-    "signature:integrity": params.signature,
+    "public-key": cleanPublicKey,
+    currency: cleanCurrency,
+    "amount-in-cents": cleanAmountInCents,
+    reference: cleanReference,
+    "signature:integrity": cleanSignature,
   });
 
   if (params.redirectUrl) {
-    query.set("redirect-url", params.redirectUrl);
+    query.set("redirect-url", params.redirectUrl.trim());
+  }
+
+  if (params.expirationTime) {
+    query.set("expiration-time", params.expirationTime.trim());
   }
 
   if (params.customerData?.email) {
-    query.set("customer-data:email", params.customerData.email);
+    query.set("customer-data:email", params.customerData.email.trim());
   }
   if (params.customerData?.fullName) {
-    query.set("customer-data:full-name", params.customerData.fullName);
+    query.set("customer-data:full-name", params.customerData.fullName.trim());
   }
   if (params.customerData?.phoneNumber) {
-    query.set("customer-data:phone-number", params.customerData.phoneNumber);
+    query.set("customer-data:phone-number", params.customerData.phoneNumber.trim());
   }
 
-  return `${wompiConfig.checkoutUrl}?${query.toString()}`;
+  // Wompi acepta la query con ':' en los parámetros signature:integrity y customer-data:*
+  // Reemplazar '%3A' por ':' garantiza máxima compatibilidad con los analizadores oficiales de Wompi
+  const queryString = query.toString().replace(/%3A/g, ":");
+
+  return `${wompiConfig.checkoutUrl}?${queryString}`;
 }
 
 /**

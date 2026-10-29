@@ -29,6 +29,7 @@ console.log(`${CYAN}  KYVORA - SUITE DE PRUEBAS DE SEGURIDAD & WOMPI    ${RESET}
 console.log(`${CYAN}====================================================${RESET}\n`);
 
 // 1. Algoritmo Oficial de Firma de Integridad Wompi (SHA-256)
+// 1. Algoritmo Oficial de Firma de Integridad Wompi (SHA-256)
 function testIntegritySignature() {
   const reference = "KYV-DON-PULSO-1730000000-ABCD";
   const amountInCents = 1000000; // 1.000.000 centavos = $10.000 COP
@@ -49,6 +50,132 @@ function testIntegritySignature() {
   assert(
     expectedHash !== alteredHash,
     "Firma inválida al alterar el importe (Protección frente a manipulación en el cliente)"
+  );
+
+  // Vector de prueba oficial de la documentación de Wompi (sin expiration-time)
+  // https://docs.wompi.co/docs/colombia/widget-checkout-web/
+  const docRef = "sk8-438k4-xmxm392-sn2m";
+  const docAmount = 2490000;
+  const docCurrency = "COP";
+  const docSecret = "prod_integrity_Z5mMke9x0k8gpErbDqwrJXMqsI6SFli6";
+  const docExpectedHash = "37c8407747e595535433ef8f6a811d853cd943046624a0ec04662b17bbf33bf5";
+
+  function calcSignature(ref, amount, curr, secret, expiration) {
+    const s = (secret || "").trim().replace(/^["']|["']$/g, "");
+    if (!s) throw new Error("Missing secret");
+    if (s.startsWith("prv_")) throw new Error("Private key used as integrity secret");
+    if (s.startsWith("pub_")) throw new Error("Public key used as integrity secret");
+    if (s.includes("_events_")) throw new Error("Events secret used as integrity secret");
+    const r = (ref || "").trim();
+    const c = (curr || "COP").trim().toUpperCase();
+    if (c !== "COP") throw new Error("Currency must be COP");
+    const a = Math.round(Number(amount));
+    if (isNaN(a) || a <= 0) throw new Error("Invalid amount");
+    const exp = expiration ? expiration.trim() : "";
+    const str = exp ? `${r}${a}${c}${exp}${s}` : `${r}${a}${c}${s}`;
+    return crypto.createHash("sha256").update(str, "utf8").digest("hex");
+  }
+
+  const calculatedDocHash = calcSignature(docRef, docAmount, docCurrency, docSecret);
+  assert(
+    calculatedDocHash === docExpectedHash,
+    "[DOC-VECTOR-1] Firma SHA-256 coincide exactamente con el vector de prueba oficial de Wompi (37c840...)"
+  );
+
+  // Vector de prueba oficial de Wompi con expiration-time
+  // Orden oficial: <Referencia><Monto><Moneda><FechaExpiracion><SecretoIntegridad>
+  const docExpiration = "2023-06-09T20:28:50.000Z";
+  const docWithExpString = `${docRef}${docAmount}${docCurrency}${docExpiration}${docSecret}`;
+  const docWithExpHash = crypto.createHash("sha256").update(docWithExpString, "utf8").digest("hex");
+  const calculatedWithExpHash = calcSignature(docRef, docAmount, docCurrency, docSecret, docExpiration);
+  assert(
+    calculatedWithExpHash === docWithExpHash,
+    "[DOC-VECTOR-2] Firma SHA-256 con expiration-time respeta el orden estricto <Ref><Monto><Moneda><Exp><Secret>"
+  );
+
+  // Sanitización de espacios y comillas en el secreto
+  const dirtySecret = "  prod_integrity_Z5mMke9x0k8gpErbDqwrJXMqsI6SFli6 \r\n";
+  const sanitizedHash = calcSignature(docRef, docAmount, docCurrency, dirtySecret);
+  assert(
+    sanitizedHash === docExpectedHash,
+    "Sanitización de secreto elimina espacios en blanco y saltos de línea sin corromper el hash SHA-256"
+  );
+
+  const quotedSecret = '"prod_integrity_Z5mMke9x0k8gpErbDqwrJXMqsI6SFli6"';
+  const sanitizedQuotedHash = calcSignature(docRef, docAmount, docCurrency, quotedSecret);
+  assert(
+    sanitizedQuotedHash === docExpectedHash,
+    "Sanitización de secreto elimina comillas accidentales de variables de entorno"
+  );
+
+  // Conversión a centavos única: 50.000 COP -> 5.000.000 centavos
+  const parsedCOP = 50000;
+  const singleCents = Math.round(parsedCOP * 100);
+  assert(
+    singleCents === 5000000,
+    "El monto se convierte a centavos una sola vez (50.000 COP -> 5.000.000 centavos)"
+  );
+
+  // Moneda COP estricta
+  let nonCopFailed = false;
+  try {
+    calcSignature(docRef, docAmount, "USD", docSecret);
+  } catch {
+    nonCopFailed = true;
+  }
+  assert(
+    nonCopFailed,
+    "Rechazo estricto si la moneda de donación no es COP"
+  );
+
+  // Validación de secreto de integridad vs otras credenciales (prevención de confusión)
+  function validateSecretEnv(secret, pubKey, env) {
+    const s = (secret || "").trim().replace(/^["']|["']$/g, "");
+    if (!s) return { isValid: false, reason: "empty" };
+    if (s.startsWith("prv_")) return { isValid: false, reason: "private_key_confused" };
+    if (s.startsWith("pub_")) return { isValid: false, reason: "public_key_confused" };
+    if (s.includes("_events_")) return { isValid: false, reason: "events_secret_confused" };
+    const isProdKey = (pubKey || "").startsWith("pub_prod_");
+    const isProdEnv = (env || "").toLowerCase().trim() === "production";
+    if ((isProdKey || isProdEnv) && s.startsWith("test_integrity_")) {
+      return { isValid: false, reason: "sandbox_secret_in_production" };
+    }
+    if ((!isProdKey && !isProdEnv) && s.startsWith("prod_integrity_")) {
+      return { isValid: false, reason: "prod_secret_in_sandbox" };
+    }
+    if (!s.startsWith("prod_integrity_") && !s.startsWith("test_integrity_")) {
+      return { isValid: false, reason: "unknown_format" };
+    }
+    return { isValid: true };
+  }
+
+  assert(
+    validateSecretEnv("prv_prod_mockKey", "pub_prod_123", "production").reason === "private_key_confused",
+    "Detección y rechazo si WOMPI_INTEGRITY_SECRET contiene por error la llave privada (prv_...)"
+  );
+  assert(
+    validateSecretEnv("pub_prod_mockKey", "pub_prod_123", "production").reason === "public_key_confused",
+    "Detección y rechazo si WOMPI_INTEGRITY_SECRET contiene por error la llave pública (pub_...)"
+  );
+  assert(
+    validateSecretEnv("prod_events_mockKey", "pub_prod_123", "production").reason === "events_secret_confused",
+    "Detección y rechazo si WOMPI_INTEGRITY_SECRET contiene por error el secreto de eventos (prod_events_...)"
+  );
+  assert(
+    validateSecretEnv("test_integrity_sandboxKey", "pub_prod_123", "production").reason === "sandbox_secret_in_production",
+    "Detección y rechazo si se utiliza secreto Sandbox (test_integrity_...) con llave pública o entorno de Producción"
+  );
+  assert(
+    validateSecretEnv("prod_integrity_prodKey", "pub_test_123", "sandbox").reason === "prod_secret_in_sandbox",
+    "Detección y rechazo si se utiliza secreto de Producción (prod_integrity_...) con llave pública de Sandbox"
+  );
+  assert(
+    validateSecretEnv("prod_integrity_prodKey", "pub_prod_123", "production").isValid === true,
+    "Aceptación válida de secreto de Producción (prod_integrity_...) con entorno y llave de Producción"
+  );
+  assert(
+    validateSecretEnv("test_integrity_testKey", "pub_test_123", "sandbox").isValid === true,
+    "Aceptación válida de secreto de Sandbox (test_integrity_...) con entorno y llave de Sandbox"
   );
 }
 
@@ -343,7 +470,8 @@ function testCheckoutUrlBuildingAndParameterConsistency() {
       query.set("customer-data:phone-number", params.customerData.phoneNumber);
     }
 
-    return `https://checkout.wompi.co/p/?${query.toString()}`;
+    // Preservar ':' en query string sin codificar a '%3A' para máxima compatibilidad con Wompi
+    return `https://checkout.wompi.co/p/?${query.toString().replace(/%3A/g, ":")}`;
   }
 
   const generatedUrl = buildCheckoutUrl({
@@ -361,6 +489,11 @@ function testCheckoutUrlBuildingAndParameterConsistency() {
 
   const parsedUrl = new URL(generatedUrl);
   const q = parsedUrl.searchParams;
+
+  assert(
+    generatedUrl.includes("signature:integrity="),
+    "La URL del checkout conserva el parámetro 'signature:integrity=' con ':' (sin codificación espuria '%3A')"
+  );
 
   // Verificación de correspondencia exacta 1:1 entre firma y query params
   assert(

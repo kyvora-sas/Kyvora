@@ -4,6 +4,7 @@ import {
   generateReference,
   copToCents,
   calculateIntegritySignature,
+  validateIntegritySecretForEnvironment,
   buildWompiCheckoutUrl,
   buildWompiReturnUrl,
 } from "@/lib/wompi";
@@ -77,17 +78,37 @@ export async function POST(request: Request) {
     const currency = wompiConfig.currency;
 
     // 4. Clave pública y secreto de integridad desde variables de entorno estrictas
-    const publicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || process.env.WOMPI_PUBLIC_KEY;
-    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET || process.env.WOMPI_INTEGRITY_KEY;
+    const publicKey = (process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || process.env.WOMPI_PUBLIC_KEY || "").trim();
+    const integritySecret = (process.env.WOMPI_INTEGRITY_SECRET || process.env.WOMPI_INTEGRITY_KEY || "").trim().replace(/^["']|["']$/g, "");
 
     if (!publicKey || !integritySecret) {
       console.error(
-        "[api/donate/create-transaction] Faltan variables de entorno: NEXT_PUBLIC_WOMPI_PUBLIC_KEY (o WOMPI_PUBLIC_KEY) y WOMPI_INTEGRITY_SECRET deben estar definidas."
+        "[api/donate/create-transaction] Faltan variables de entorno: NEXT_PUBLIC_WOMPI_PUBLIC_KEY y WOMPI_INTEGRITY_SECRET deben estar definidas."
       );
       return NextResponse.json(
         {
           error:
             "La pasarela de pagos no está configurada en el servidor (Se requieren NEXT_PUBLIC_WOMPI_PUBLIC_KEY y WOMPI_INTEGRITY_SECRET en las variables de entorno).",
+        },
+        { status: 500 }
+      );
+    }
+
+    // Validación estricta del secreto de integridad para evitar error «firma inválida» por credenciales cruzadas
+    const currentEnv =
+      process.env.NEXT_PUBLIC_WOMPI_ENVIRONMENT ||
+      process.env.WOMPI_ENVIRONMENT ||
+      (publicKey.startsWith("pub_prod_") ? "production" : "sandbox");
+    const secretValidation = validateIntegritySecretForEnvironment(integritySecret, publicKey, currentEnv);
+    if (!secretValidation.isValid) {
+      console.error(
+        "[api/donate/create-transaction] Error de configuración de secreto de integridad:",
+        secretValidation.reason
+      );
+      return NextResponse.json(
+        {
+          error: `Error de configuración en pasarela de pagos: ${secretValidation.reason}`,
+          code: "INVALID_INTEGRITY_SECRET_CONFIGURATION",
         },
         { status: 500 }
       );

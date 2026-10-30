@@ -4,7 +4,7 @@ import LegalLayout from "@/components/LegalLayout";
 import { legalConfig } from "@/config/legal";
 
 export const metadata: Metadata = {
-  title: "Política de Cookies y Tecnologías Similares — KYVORA",
+  title: "Política de Cookies y Tecnologías Similares — Kyvora",
   description:
     "Política técnica sobre el uso exclusivo de cookies esenciales, almacenamiento local y ausencia de rastreadores publicitarios en KYVORA conforme a la normativa colombiana.",
 };
@@ -34,7 +34,7 @@ export default function CookiesPage() {
         <p>
           De acuerdo con la auditoría técnica de nuestra arquitectura sobre Next.js y Vercel, las únicas tecnologías empleadas en este portal son:
         </p>
-        
+
         <div className="space-y-4 bg-surface p-6 rounded-xl border border-white/10 text-sm">
           <div>
             <div className="flex items-center justify-between">
@@ -74,7 +74,7 @@ export default function CookiesPage() {
         <div className="p-4 bg-emerald-950/20 border border-emerald-500/20 rounded-xl space-y-1.5 text-xs text-foreground-muted leading-relaxed">
           <p className="text-white font-medium">Ausencia de Rastreadores Publicitarios (Transparencia Total):</p>
           <p>
-            KYVORA <strong>NO utiliza píxeles de seguimiento publicitario (como Meta Pixel o TikTok Pixel), cookies de remarketing de Google Ads, identificadores de huella digital del dispositivo (fingerprinting), ni scripts de analítica que revendan o compartan el comportamiento del usuario con intermediarios publicitarios</strong>.
+            Kyvora <strong>NO utiliza píxeles de seguimiento publicitario (como Meta Pixel o TikTok Pixel), cookies de remarketing de Google Ads, identificadores de huella digital del dispositivo (fingerprinting), ni scripts de analítica que revendan o compartan el comportamiento del usuario con intermediarios publicitarios</strong>.
           </p>
         </div>
       </section>

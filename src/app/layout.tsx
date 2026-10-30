@@ -18,8 +18,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: "KYVORA — Estudio Tecnológico y de Software en Colombia",
-    template: "%s | KYVORA",
+    default: "Kyvora — Estudio Tecnológico y de Software en Colombia",
+    template: "%s | Kyvora",
   },
   description: siteConfig.description,
   keywords: [
@@ -28,18 +28,18 @@ export const metadata: Metadata = {
     "Aplicaciones Next.js Colombia",
     "Automatización e Inteligencia Artificial",
     "Estudio tecnológico independiente",
-    "KYVORA",
+    "Kyvora",
     "QuakeNet",
     "Pulso",
   ],
-  authors: [{ name: "KYVORA", url: siteConfig.url }],
-  creator: "KYVORA",
-  publisher: "KYVORA",
+  authors: [{ name: "Kyvora", url: siteConfig.url }],
+  creator: "Kyvora",
+  publisher: "Kyvora",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "KYVORA — Software Real para Ideas Complejas",
+    title: "Kyvora — Software Real para Ideas Complejas",
     description: siteConfig.description,
     url: siteConfig.url,
     siteName: siteConfig.name,
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "KYVORA — Estudio Tecnológico y de Software",
+    title: "Kyvora — Estudio Tecnológico y de Software",
     description: siteConfig.description,
   },
   robots: {

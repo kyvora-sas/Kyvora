@@ -175,13 +175,13 @@ export default function LabProjects() {
         </div>
 
         {/* Secondary Projects Row: Kyvora Studio & PulsAI */}
-        <div className="mt-8 md:mt-12 grid md:grid-cols-2 gap-8 items-start">
+        <div className="mt-8 md:mt-12 grid md:grid-cols-2 gap-8 items-stretch">
           {projectsConfig
             .filter((p) => p.id === "kyvora-studio" || p.id === "pulsai")
             .map((proj) => (
               <div
                 key={proj.id}
-                className="rounded-2xl bg-surface border border-white/10 hover:border-[var(--color-accent)]/50 transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                className="rounded-2xl bg-surface border border-white/10 hover:border-[var(--color-accent)]/50 transition-all duration-300 overflow-hidden flex flex-col justify-between group h-full"
               >
                 {proj.image && (
                   <div className="aspect-[16/10] bg-[#050811] relative overflow-hidden">

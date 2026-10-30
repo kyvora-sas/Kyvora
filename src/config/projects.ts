@@ -2,6 +2,7 @@ import type { StaticImageData } from "next/image";
 import pulsoImg from "@/img/Pulso.png";
 import quakeNetImg from "@/img/QuakeNet.png";
 import kyvoraStudioImg from "@/img/KyvoraStudio.png";
+import pulsAiImg from "@/img/PulsAI.png";
 
 export interface ProjectItem {
   id: string;
@@ -81,6 +82,8 @@ export const projectsConfig: ProjectItem[] = [
     technologies: ["Python", "LangChain", "Node.js", "Vector DB"],
     status: "Experimental",
     statusVariant: "warning",
+    image: pulsAiImg,
+    imageAlt: "Captura de la interfaz analítica de PulsAI",
     links: {
       repo: "https://github.com/Kyvora-org",
     },

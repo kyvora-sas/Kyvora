@@ -6,14 +6,14 @@ import { legalConfig } from "@/config/legal";
 export const metadata: Metadata = {
   title: "Aviso de Privacidad — KYVORA",
   description:
-    "Aviso de privacidad comercial e institucional de KYVORA de conformidad con los artículos 14 y 15 del Decreto 1377 de 2013 en Colombia.",
+    "Aviso de privacidad comercial e institucional de Kyvora de conformidad con los artículos 14 y 15 del Decreto 1377 de 2013 en Colombia.",
 };
 
 export default function PrivacidadPage() {
   return (
     <LegalLayout
       title="Aviso de Privacidad"
-      subtitle="Información previa y expresa sobre el tratamiento de datos personales suministrados a través de los formularios y canales digitales de KYVORA."
+      subtitle="Información previa y expresa sobre el tratamiento de datos personales suministrados a través de los formularios y canales digitales de Kyvora."
       lastUpdated="27 de Octubre de 2026"
       normativeBase="Decreto 1377 de 2013 (Arts. 14 y 15) & Ley 1581 de 2012"
     >
@@ -51,7 +51,7 @@ export default function PrivacidadPage() {
           <li><strong>Seguridad web y auditoría:</strong> Proteger la infraestructura contra ataques informáticos, prevenir el envío no autorizado de correo masivo (spam) y cumplir obligaciones contables y tributarias en Colombia.</li>
         </ul>
         <p className="text-xs text-foreground-muted/80">
-          <em>Aclaración de no cesión:</em> KYVORA no vende, arrienda ni cede bases de datos personales a terceras entidades para fines publicitarios o de prospección comercial no consentida.
+          <em>Aclaración de no cesión:</em> Kyvora no vende, arrienda ni cede bases de datos personales a terceras entidades para fines publicitarios o de prospección comercial no consentida.
         </p>
       </section>
 
@@ -65,7 +65,7 @@ export default function PrivacidadPage() {
           <li>Conocer, actualizar y rectificar sus datos personales frente al responsable.</li>
           <li>Solicitar prueba de la autorización otorgada para el tratamiento.</li>
           <li>Ser informado sobre el uso específico que se le ha dado a sus datos.</li>
-          <li>Presentar quejas ante la Superintendencia de Industria y Comercio (SIC) una vez agotado el trámite directo con KYVORA.</li>
+          <li>Presentar quejas ante la Superintendencia de Industria y Comercio (SIC) una vez agotado el trámite directo con Kyvora.</li>
           <li>Revocar la autorización o solicitar la supresión del dato en los términos del ordenamiento jurídico.</li>
           <li>Acceder de forma gratuita a los datos personales que hayan sido objeto de tratamiento.</li>
         </ol>

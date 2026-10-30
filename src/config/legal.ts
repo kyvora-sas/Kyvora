@@ -9,8 +9,8 @@
  */
 
 export const legalConfig = {
-  brandName: "KYVORA",
-  tradeName: "KYVORA Studio & Software",
+  brandName: "Kyvora",
+  tradeName: "Kyvora Studio & Software",
   commercialActivity: "Servicios de desarrollo de software, diseño de interfaces, aplicaciones y consultoría técnica.",
 
   // Datos del responsable (Persona Natural en Colombia)

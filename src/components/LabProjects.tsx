@@ -175,47 +175,77 @@ export default function LabProjects() {
         </div>
 
         {/* Secondary Projects Row: Kyvora Studio & PulsAI */}
-        <div className="mt-8 md:mt-12 grid md:grid-cols-2 gap-8">
+        <div className="mt-8 md:mt-12 grid md:grid-cols-2 gap-8 items-start">
           {projectsConfig
             .filter((p) => p.id === "kyvora-studio" || p.id === "pulsai")
             .map((proj) => (
               <div
                 key={proj.id}
-                className="p-6 md:p-8 rounded-2xl bg-surface/70 border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between space-y-6"
+                className="rounded-2xl bg-surface border border-white/10 hover:border-[var(--color-accent)]/50 transition-all duration-300 overflow-hidden flex flex-col justify-between group"
               >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <StatusBadge status={proj.status} variant={proj.statusVariant} />
-                    <span className="text-xs font-mono text-foreground-muted/60 uppercase">
-                      Prototipo Interno
-                    </span>
+                {proj.image && (
+                  <div className="aspect-[16/10] bg-[#050811] relative overflow-hidden">
+                    <Image
+                      src={proj.image}
+                      alt={proj.imageAlt || proj.name}
+                      fill
+                      className="object-cover object-top opacity-85 group-hover:opacity-100 group-hover:scale-[1.02] transition-all duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent pointer-events-none" />
+                  </div>
+                )}
+
+                <div className="p-6 md:p-8 flex flex-col justify-between flex-1 space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <StatusBadge status={proj.status} variant={proj.statusVariant} />
+                      {proj.links?.repo ? (
+                        <a
+                          href={proj.links.repo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-foreground-muted hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono"
+                          aria-label={`Ver repositorio de ${proj.name}`}
+                        >
+                          <GithubIcon className="w-4 h-4" />
+                          <span>Repositorio</span>
+                        </a>
+                      ) : (
+                        <span className="text-xs font-mono text-foreground-muted/60 uppercase">
+                          Prototipo Interno
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-2xl font-bold tracking-tight text-white flex items-center justify-between">
+                      <span>{proj.name}</span>
+                      {proj.links?.repo && (
+                        <ArrowUpRight className="w-5 h-5 text-foreground-muted group-hover:text-[var(--color-accent-cyan)] transition-colors" />
+                      )}
+                    </h3>
+
+                    <p className="text-sm text-foreground-muted font-light leading-relaxed">
+                      {proj.tagline}
+                    </p>
+
+                    <div className="text-xs text-foreground-muted/80 space-y-1">
+                      <strong className="text-white block font-mono uppercase tracking-wider text-[11px]">
+                        Propósito técnico:
+                      </strong>
+                      <p className="font-light">{proj.purpose}</p>
+                    </div>
                   </div>
 
-                  <h3 className="text-2xl font-bold tracking-tight text-white">
-                    {proj.name}
-                  </h3>
-
-                  <p className="text-sm text-foreground-muted font-light leading-relaxed">
-                    {proj.tagline}
-                  </p>
-
-                  <div className="text-xs text-foreground-muted/80 space-y-1">
-                    <strong className="text-white block font-mono uppercase tracking-wider text-[11px]">
-                      Propósito técnico:
-                    </strong>
-                    <p className="font-light">{proj.purpose}</p>
+                  <div className="pt-4 border-t border-white/5 flex flex-wrap gap-2">
+                    {proj.technologies.map((tech) => (
+                      <span
+                        key={tech}
+                        className="px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs font-mono text-foreground-muted"
+                      >
+                        {tech}
+                      </span>
+                    ))}
                   </div>
-                </div>
-
-                <div className="pt-4 border-t border-white/5 flex flex-wrap gap-2">
-                  {proj.technologies.map((tech) => (
-                    <span
-                      key={tech}
-                      className="px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs font-mono text-foreground-muted"
-                    >
-                      {tech}
-                    </span>
-                  ))}
                 </div>
               </div>
             ))}

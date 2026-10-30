@@ -113,7 +113,7 @@ export default function ContactSection() {
                   className="p-3.5 rounded-xl bg-surface border border-white/5 hover:border-white/20 transition-colors flex items-center gap-3 text-foreground-muted hover:text-white group"
                 >
                   <GithubIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <span>github.com/kyvora-sas</span>
+                  <span>github.com/Kyvora-org</span>
                   <span className="ml-auto text-[10px] text-foreground-muted uppercase tracking-widest font-sans">
                     GitHub
                   </span>

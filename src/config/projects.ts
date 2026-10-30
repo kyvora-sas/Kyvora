@@ -1,6 +1,7 @@
 import type { StaticImageData } from "next/image";
 import pulsoImg from "@/img/Pulso.png";
 import quakeNetImg from "@/img/QuakeNet.png";
+import kyvoraStudioImg from "@/img/KyvoraStudio.png";
 
 export interface ProjectItem {
   id: string;
@@ -33,7 +34,7 @@ export const projectsConfig: ProjectItem[] = [
     image: pulsoImg,
     imageAlt: "Captura de la interfaz de la aplicación Pulso",
     links: {
-      repo: "https://github.com/kyvora-sas",
+      repo: "https://github.com/Kyvora-org",
     },
     donationTargetEligible: true,
     donationTargetDescription: "Fondos dirigidos a pruebas de concurrencia e infraestructura de servidores para la beta.",
@@ -50,7 +51,7 @@ export const projectsConfig: ProjectItem[] = [
     image: quakeNetImg,
     imageAlt: "Captura de la interfaz analítica de QuakeNet",
     links: {
-      repo: "https://github.com/kyvora-sas",
+      repo: "https://github.com/Kyvora-org",
     },
     donationTargetEligible: true,
     donationTargetDescription: "Fondos dirigidos a componentes de hardware y sensores de prueba para calibración.",
@@ -64,6 +65,11 @@ export const projectsConfig: ProjectItem[] = [
     technologies: ["TypeScript", "React 19", "Tailwind CSS", "Next.js"],
     status: "En Desarrollo",
     statusVariant: "purple",
+    image: kyvoraStudioImg,
+    imageAlt: "Captura de la interfaz de Kyvora Studio",
+    links: {
+      repo: "https://github.com/Kyvora-org",
+    },
     donationTargetEligible: false,
   },
   {
@@ -75,6 +81,9 @@ export const projectsConfig: ProjectItem[] = [
     technologies: ["Python", "LangChain", "Node.js", "Vector DB"],
     status: "Experimental",
     statusVariant: "warning",
+    links: {
+      repo: "https://github.com/Kyvora-org",
+    },
     donationTargetEligible: true,
     donationTargetDescription: "Fondos dirigidos al consumo de tokens de experimentación y evaluación de modelos abiertos.",
   },

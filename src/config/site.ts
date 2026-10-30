@@ -4,9 +4,9 @@ export interface NavItem {
 }
 
 export const siteConfig = {
-  name: "KYVORA",
-  legalName: "KYVORA",
-  tradeName: "KYVORA Studio & Software",
+  name: "Kyvora",
+  legalName: "Kyvora",
+  tradeName: "Kyvora Studio & Software",
   operatorType: "Persona Natural Independiente en Colombia",
   tagline: "Tecnología para ideas que todavía no existen.",
   description:

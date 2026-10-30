@@ -3,6 +3,7 @@ import pulsoImg from "@/img/Pulso.png";
 import quakeNetImg from "@/img/QuakeNet.png";
 import kyvoraStudioImg from "@/img/KyvoraStudio.png";
 import pulsAiImg from "@/img/PulsAI.png";
+import voiceTranslateImg from "@/img/VoiceTranslate.png";
 
 export interface ProjectItem {
   id: string;
@@ -89,5 +90,21 @@ export const projectsConfig: ProjectItem[] = [
     },
     donationTargetEligible: true,
     donationTargetDescription: "Fondos dirigidos al consumo de tokens de experimentación y evaluación de modelos abiertos.",
+  },
+  {
+    id: "voicetranslate",
+    name: "VoiceTranslate",
+    tagline: "Traductor de voz bidireccional en tiempo real con IA y síntesis auditiva.",
+    purpose:
+      "Herramienta web de transcripción continua y traducción contextual de baja latencia impulsada por Web Speech API y Gemini 2.5 Flash, con prevención automática de eco y modo conversación en vivo.",
+    technologies: ["JavaScript ES6", "Web Speech API", "Gemini Flash", "Text-to-Speech", "PWA"],
+    status: "Fase Beta",
+    statusVariant: "info",
+    image: voiceTranslateImg,
+    imageAlt: "Captura de la interfaz de VoiceTranslate",
+    links: {
+      repo: "https://github.com/Kyvora-org/-VoiceTranslate",
+    },
+    donationTargetEligible: false,
   },
 ];

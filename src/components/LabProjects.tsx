@@ -174,10 +174,10 @@ export default function LabProjects() {
           })()}
         </div>
 
-        {/* Secondary Projects Row: Kyvora Studio & PulsAI */}
-        <div className="mt-8 md:mt-12 grid md:grid-cols-2 gap-8 items-stretch">
+        {/* Secondary Projects Row: Kyvora Studio, PulsAI & VoiceTranslate */}
+        <div className="mt-8 md:mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
           {projectsConfig
-            .filter((p) => p.id === "kyvora-studio" || p.id === "pulsai")
+            .filter((p) => p.id !== "pulso" && p.id !== "quakenet")
             .map((proj) => (
               <div
                 key={proj.id}

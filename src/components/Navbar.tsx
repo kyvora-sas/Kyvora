@@ -6,10 +6,22 @@ import Image from "next/image";
 import { Menu, X, ArrowUpRight, Sparkles } from "lucide-react";
 import logoImg from "@/img/logo.png";
 import { siteConfig } from "@/config/site";
+import { useLanguage } from "@/context/LanguageContext";
+import LanguageToggle from "@/components/LanguageToggle";
 
 export default function Navbar() {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const navLabels: Record<string, string> = {
+    "#servicios": t.nav.services,
+    "#laboratorio": t.nav.lab,
+    "#precios": t.nav.pricing,
+    "#proceso": t.nav.process,
+    "#donate": t.nav.donate,
+    "#contacto": t.nav.contact,
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,7 +57,7 @@ export default function Navbar() {
   return (
     <>
       <a href="#contenido-principal" className="skip-link">
-        Saltar al contenido principal
+        {t.nav.skipLink}
       </a>
 
       <header
@@ -73,38 +85,42 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium" aria-label="Navegación principal">
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium" aria-label={t.nav.navigationLabel}>
             {siteConfig.navigation.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className="text-foreground-muted hover:text-white transition-colors relative py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded"
               >
-                {item.label}
+                {navLabels[item.href] || item.label}
               </Link>
             ))}
           </nav>
 
           {/* CTA & Actions */}
           <div className="hidden lg:flex items-center gap-4">
+            <LanguageToggle />
             <Link
               href="#contacto"
               className="px-5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Iniciar Proyecto</span>
+              <span>{t.nav.startProject}</span>
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2 text-foreground-muted hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-lg"
-            aria-expanded={isOpen}
-            aria-label={isOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="lg:hidden flex items-center gap-3">
+            <LanguageToggle />
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 text-foreground-muted hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-lg"
+              aria-expanded={isOpen}
+              aria-label={isOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
+            >
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -114,11 +130,14 @@ export default function Navbar() {
           className="fixed inset-0 z-40 bg-background/95 backdrop-blur-2xl lg:hidden flex flex-col justify-between p-6 pt-24"
           role="dialog"
           aria-modal="true"
-          aria-label="Menú móvil"
+          aria-label={t.nav.mobileNavTitle}
         >
           <div className="space-y-6">
-            <div className="text-xs font-mono uppercase tracking-widest text-foreground-muted border-b border-white/10 pb-3">
-              Navegación
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <span className="text-xs font-mono uppercase tracking-widest text-foreground-muted">
+                {t.nav.mobileNavTitle}
+              </span>
+              <LanguageToggle />
             </div>
             <nav className="flex flex-col space-y-4">
               {siteConfig.navigation.map((item) => (
@@ -128,7 +147,7 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="text-2xl font-bold tracking-tight text-white hover:text-[var(--color-accent-cyan)] transition-colors py-2 flex items-center justify-between border-b border-white/5"
                 >
-                  <span>{item.label}</span>
+                  <span>{navLabels[item.href] || item.label}</span>
                   <ArrowUpRight className="w-5 h-5 text-foreground-muted" />
                 </Link>
               ))}
@@ -142,10 +161,10 @@ export default function Navbar() {
               className="w-full py-4 bg-[var(--color-accent)] text-white text-center text-sm font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
-              <span>Iniciar Proyecto</span>
+              <span>{t.nav.startProject}</span>
             </Link>
             <div className="text-center text-xs text-foreground-muted font-mono">
-              Operando desde Colombia · {siteConfig.contacts.whatsappNumber}
+              {t.nav.operatingFrom} · {siteConfig.contacts.whatsappNumber}
             </div>
           </div>
         </div>

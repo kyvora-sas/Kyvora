@@ -1,11 +1,25 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { MessageCircle, Mail, ExternalLink, ShieldCheck } from "lucide-react";
 import { GithubIcon, InstagramIcon } from "@/components/SocialIcons";
 import logoImg from "@/img/logo.png";
 import { siteConfig } from "@/config/site";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Footer() {
+  const { t, language } = useLanguage();
+
+  const navLinks = [
+    { href: "#servicios", label: t.nav.services },
+    { href: "#laboratorio", label: t.nav.lab },
+    { href: "#precios", label: t.nav.pricing },
+    { href: "#proceso", label: t.nav.process },
+    { href: "#donate", label: t.nav.donate },
+    { href: "#contacto", label: t.nav.contact },
+  ];
+
   return (
     <footer className="bg-surface border-t border-white/10 pt-16 pb-12 text-sm text-foreground-muted font-sans">
       <div className="max-w-7xl mx-auto px-6 space-y-16">
@@ -17,21 +31,21 @@ export default function Footer() {
               <Image src={logoImg} alt="KYVORA Logo" width={130} height={42} className="object-contain" />
             </Link>
             <p className="text-foreground-muted text-sm font-light leading-relaxed max-w-sm">
-              {siteConfig.description}
+              {t.footer.description}
             </p>
             <div className="text-xs font-mono text-foreground-muted/70 space-y-1">
-              <div>Operado en Colombia por Persona Natural Independiente.</div>
-              <div>Infraestructura preparada para Vercel & Wompi.</div>
+              <div>{t.footer.operatingNote}</div>
+              <div>{t.footer.infraNote}</div>
             </div>
           </div>
 
           {/* Navigation Links (Cols 5-6) */}
           <div className="lg:col-span-2 space-y-4">
             <h4 className="text-xs font-mono uppercase tracking-widest text-white font-semibold">
-              Navegación
+              {t.footer.navTitle}
             </h4>
             <ul className="space-y-2.5 text-xs font-mono">
-              {siteConfig.navigation.map((item) => (
+              {navLinks.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="hover:text-white transition-colors">
                     {item.label}
@@ -44,10 +58,10 @@ export default function Footer() {
           {/* Legal Pages (Cols 7-9) */}
           <div className="lg:col-span-3 space-y-4">
             <h4 className="text-xs font-mono uppercase tracking-widest text-white font-semibold">
-              Marco Legal Colombia
+              {t.footer.legalTitle}
             </h4>
             <ul className="space-y-2.5 text-xs font-mono">
-              {siteConfig.legalNav.map((item) => (
+              {t.footer.legalNav.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="hover:text-[var(--color-accent-cyan)] transition-colors">
                     {item.label}
@@ -60,7 +74,7 @@ export default function Footer() {
           {/* Channels & SIC (Cols 10-12) */}
           <div className="lg:col-span-3 space-y-5">
             <h4 className="text-xs font-mono uppercase tracking-widest text-white font-semibold">
-              Canales Verificados
+              {t.footer.channelsTitle}
             </h4>
             <div className="flex flex-wrap gap-3">
               <a
@@ -106,7 +120,7 @@ export default function Footer() {
                 <span>Superintendencia de Industria y Comercio</span>
               </div>
               <p className="text-[11px] text-foreground-muted leading-tight font-light">
-                Protección al consumidor y datos personales (Ley 1480 de 2011).
+                {t.footer.sicText}
               </p>
               <a
                 href={siteConfig.contacts.sicUrl}
@@ -114,7 +128,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[var(--color-accent-cyan)] hover:underline"
               >
-                <span>Portal oficial SIC</span>
+                <span>{language === "en" ? "Official SIC Portal" : "Portal oficial SIC"}</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
@@ -124,19 +138,19 @@ export default function Footer() {
         {/* Bottom Sub-bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-foreground-muted/70">
           <div>
-            © {new Date().getFullYear()} {siteConfig.name}. Todos los derechos reservados.
+            © {new Date().getFullYear()} {siteConfig.name}. {t.footer.allRightsReserved}
           </div>
           <div className="flex items-center gap-4">
             <Link href="/legal/privacidad" className="hover:text-white transition-colors">
-              Privacidad
+              {language === "en" ? "Privacy" : "Privacidad"}
             </Link>
             <span>·</span>
             <Link href="/legal/terminos" className="hover:text-white transition-colors">
-              Términos
+              {language === "en" ? "Terms" : "Términos"}
             </Link>
             <span>·</span>
             <Link href="/legal/pqrs" className="hover:text-white transition-colors">
-              Radicar PQRS
+              {language === "en" ? "File PQRS" : "Radicar PQRS"}
             </Link>
           </div>
         </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -37,6 +38,10 @@ export const metadata: Metadata = {
   publisher: "Kyvora",
   alternates: {
     canonical: "/",
+    languages: {
+      es: "/",
+      en: "/?lang=en",
+    },
   },
   openGraph: {
     title: "Kyvora — Software Real para Ideas Complejas",
@@ -114,7 +119,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${spaceGrotesk.variable} ${inter.variable} font-sans antialiased bg-background text-foreground`}>
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

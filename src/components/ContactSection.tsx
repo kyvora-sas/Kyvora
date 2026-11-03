@@ -5,8 +5,10 @@ import Link from "next/link";
 import { MessageCircle, Mail, CheckCircle2, AlertCircle, Send } from "lucide-react";
 import { GithubIcon, InstagramIcon } from "@/components/SocialIcons";
 import { siteConfig } from "@/config/site";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function ContactSection() {
+  const { t, language } = useLanguage();
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -30,7 +32,7 @@ export default function ContactSection() {
 
     if (!payload.aceptaPolitica) {
       setStatus("error");
-      setErrorMessage("Debes autorizar el tratamiento de datos personales para enviar tu mensaje.");
+      setErrorMessage(t.contact.form.errorRequiredTerms);
       return;
     }
 
@@ -44,13 +46,13 @@ export default function ContactSection() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Ocurrió un error al enviar el mensaje.");
+        throw new Error(result.error || t.contact.form.errorGeneric);
       }
 
       setStatus("success");
       form.reset();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al procesar el envío.";
+      const msg = err instanceof Error ? err.message : t.contact.form.errorGeneric;
       setStatus("error");
       setErrorMessage(msg);
     }
@@ -65,20 +67,20 @@ export default function ContactSection() {
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-xs font-mono tracking-widest uppercase text-[var(--color-accent-cyan)]">
                 <span className="w-2 h-2 rounded-full bg-[var(--color-accent)]" />
-                <span>Contacto Directo</span>
+                <span>{t.contact.badge}</span>
               </div>
               <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-white uppercase leading-none">
-                ¿Tienes algo que construir?
+                {t.contact.title}
               </h2>
               <p className="text-foreground-muted text-base sm:text-lg font-light leading-relaxed">
-                Cuéntanos qué tienes en mente. No necesitas tener todo especificado desde el primer día: nosotros te ayudamos a estructurar la arquitectura técnica y el alcance.
+                {t.contact.subtitle}
               </p>
             </div>
 
             {/* Direct Verified Channels */}
             <div className="space-y-4 pt-4 border-t border-white/10">
               <h3 className="text-xs font-mono uppercase tracking-widest text-foreground-muted">
-                Canales oficiales verificados
+                {t.contact.channelsTitle}
               </h3>
 
               <div className="space-y-3 font-mono text-sm">
@@ -145,38 +147,40 @@ export default function ContactSection() {
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-                      Mensaje recibido correctamente
+                      {t.contact.form.successTitle}
                     </h3>
                     <p className="text-foreground-muted text-sm max-w-md mx-auto leading-relaxed">
-                      Revisaremos tu requerimiento y nos pondremos en contacto contigo a la brevedad posible.
+                      {t.contact.form.successDesc}
                     </p>
                   </div>
                   <button
                     onClick={() => setStatus("idle")}
                     className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-mono uppercase tracking-wider transition-colors"
                   >
-                    Enviar otro mensaje
+                    {t.contact.form.newMsgBtn}
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                   {/* Honeypot field (hidden from real users) */}
                   <div className="hidden" aria-hidden="true">
-                    <label htmlFor="website_hp">No llenar este campo si eres humano</label>
+                    <label htmlFor="website_hp">
+                      {language === "en" ? "Do not fill if human" : "No llenar este campo si eres humano"}
+                    </label>
                     <input type="text" id="website_hp" name="website_hp" tabIndex={-1} autoComplete="off" />
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label htmlFor="nombre" className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
-                        Nombre completo *
+                        {t.contact.form.nameLabel}
                       </label>
                       <input
                         required
                         id="nombre"
                         name="nombre"
                         type="text"
-                        placeholder="Ej: Daniel Morales"
+                        placeholder={t.contact.form.namePlaceholder}
                         disabled={status === "loading"}
                         className="w-full bg-background border border-white/10 rounded-xl p-3.5 text-white placeholder-foreground-muted/40 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
                       />
@@ -184,14 +188,14 @@ export default function ContactSection() {
 
                     <div className="space-y-2">
                       <label htmlFor="email" className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
-                        Correo electrónico *
+                        {t.contact.form.emailLabel}
                       </label>
                       <input
                         required
                         id="email"
                         name="email"
                         type="email"
-                        placeholder="tu@empresa.com"
+                        placeholder={t.contact.form.emailPlaceholder}
                         disabled={status === "loading"}
                         className="w-full bg-background border border-white/10 rounded-xl p-3.5 text-white placeholder-foreground-muted/40 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
                       />
@@ -201,7 +205,7 @@ export default function ContactSection() {
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label htmlFor="tipoProyecto" className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
-                        Tipo de servicio *
+                        {t.contact.form.serviceLabel}
                       </label>
                       <select
                         required
@@ -212,25 +216,25 @@ export default function ContactSection() {
                         className="w-full bg-background border border-white/10 rounded-xl p-3.5 text-white focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors cursor-pointer"
                       >
                         <option value="" disabled>
-                          Selecciona una categoría
+                          {t.contact.form.serviceDefaultOption}
                         </option>
-                        <option value="Landing Page / Web">Desarrollo Web & Landing Page</option>
-                        <option value="Aplicación Web/Móvil">Aplicación Web o Móvil (MVP)</option>
-                        <option value="Sistema a Medida">Sistema Personalizado de Software</option>
-                        <option value="Automatización / IA">Automatización e Integración de IA</option>
-                        <option value="Otro">Otro requerimiento técnico</option>
+                        {t.contact.form.serviceOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
                     <div className="space-y-2">
                       <label htmlFor="presupuesto" className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
-                        Presupuesto estimado (Opcional)
+                        {t.contact.form.budgetLabel}
                       </label>
                       <input
                         id="presupuesto"
                         name="presupuesto"
                         type="text"
-                        placeholder="Ej: $2.000.000 COP o $1.000 USD"
+                        placeholder={t.contact.form.budgetPlaceholder}
                         disabled={status === "loading"}
                         className="w-full bg-background border border-white/10 rounded-xl p-3.5 text-white placeholder-foreground-muted/40 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
                       />
@@ -239,14 +243,14 @@ export default function ContactSection() {
 
                   <div className="space-y-2">
                     <label htmlFor="descripcion" className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
-                      Descripción del proyecto o necesidad *
+                      {t.contact.form.descLabel}
                     </label>
                     <textarea
                       required
                       id="descripcion"
                       name="descripcion"
                       rows={4}
-                      placeholder="Cuéntanos el propósito de tu proyecto, qué funcionalidades clave imaginas o qué problema necesitas resolver..."
+                      placeholder={t.contact.form.descPlaceholder}
                       disabled={status === "loading"}
                       className="w-full bg-background border border-white/10 rounded-xl p-3.5 text-white placeholder-foreground-muted/40 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors resize-y min-h-[120px]"
                     ></textarea>
@@ -263,9 +267,9 @@ export default function ContactSection() {
                       className="mt-1 h-4 w-4 rounded border-white/20 bg-background text-[var(--color-accent)] focus:ring-[var(--color-accent-cyan)] cursor-pointer"
                     />
                     <label htmlFor="aceptaPolitica" className="text-xs text-foreground-muted leading-relaxed cursor-pointer font-light">
-                      Autorizo a KYVORA el tratamiento de mis datos de contacto exclusivamente para atender y dar respuesta a esta consulta comercial, conforme a la{" "}
+                      {t.contact.form.termsLabel}{" "}
                       <Link href="/legal/datos-personales" target="_blank" className="text-[var(--color-accent-cyan)] underline">
-                        Política de Tratamiento de Datos Personales
+                        {t.contact.form.termsLinkText}
                       </Link>{" "}
                       (Ley 1581 de 2012).
                     </label>
@@ -283,7 +287,7 @@ export default function ContactSection() {
                     disabled={status === "loading"}
                     className="w-full sm:w-auto px-8 py-4 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
                   >
-                    <span>{status === "loading" ? "Transmitiendo mensaje..." : "Enviar Mensaje"}</span>
+                    <span>{status === "loading" ? t.contact.form.loadingBtn : t.contact.form.submitBtn}</span>
                     <Send className="w-4 h-4" />
                   </button>
                 </form>

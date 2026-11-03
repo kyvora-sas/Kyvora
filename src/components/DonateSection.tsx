@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { HeartHandshake, ShieldCheck, ArrowRight, AlertCircle, Info } from "lucide-react";
 import { wompiConfig } from "@/config/wompi";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DonateSection() {
+  const { t, language } = useLanguage();
   const [selectedTarget, setSelectedTarget] = useState<string>("general");
   const [selectedAmount, setSelectedAmount] = useState<number>(50000);
   const [customAmount, setCustomAmount] = useState<string>("");
@@ -16,6 +18,8 @@ export default function DonateSection() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const activeTarget = wompiConfig.targets.find((t) => t.id === selectedTarget) || wompiConfig.targets[0];
+  const targetLoc = t.donate.targets.find((tg) => tg.id === selectedTarget);
+  const activeTargetTitle = targetLoc?.title || activeTarget.title;
   const finalAmountCOP = isCustom ? Number(customAmount) || 0 : selectedAmount;
 
   const handleSelectSuggested = (amount: number) => {
@@ -35,13 +39,14 @@ export default function DonateSection() {
     e.preventDefault();
     setErrorMsg(null);
 
+    const localeStr = language === "en" ? "en-US" : "es-CO";
     if (finalAmountCOP < wompiConfig.minAmountCOP) {
-      setErrorMsg(`El importe mínimo para realizar un aporte es de $${wompiConfig.minAmountCOP.toLocaleString("es-CO")} COP.`);
+      setErrorMsg(`${t.donate.errorMinAmount} $${wompiConfig.minAmountCOP.toLocaleString(localeStr)} COP.`);
       return;
     }
 
     if (finalAmountCOP > wompiConfig.maxAmountCOP) {
-      setErrorMsg(`El importe no puede superar $${wompiConfig.maxAmountCOP.toLocaleString("es-CO")} COP.`);
+      setErrorMsg(`${t.donate.errorMaxAmount} $${wompiConfig.maxAmountCOP.toLocaleString(localeStr)} COP.`);
       return;
     }
 
@@ -62,17 +67,17 @@ export default function DonateSection() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "No fue posible inicializar la pasarela de pago.");
+        throw new Error(data.error || t.donate.errorGeneric);
       }
 
       if (data.checkoutUrl) {
         // Redirigir al Checkout Web oficial de Wompi firmado por nuestro servidor
         window.location.href = data.checkoutUrl;
       } else {
-        throw new Error("No se recibió la URL de redirección segura de Wompi.");
+        throw new Error(t.donate.errorGeneric);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al conectar con la pasarela de pago.";
+      const msg = err instanceof Error ? err.message : t.donate.errorGeneric;
       setErrorMsg(msg);
       setLoading(false);
     }
@@ -86,14 +91,14 @@ export default function DonateSection() {
           <div>
             <div className="flex items-center gap-3 text-xs font-mono tracking-widest uppercase text-[var(--color-accent-cyan)] mb-3">
               <HeartHandshake className="w-4 h-4 text-[var(--color-accent)]" />
-              <span>Mecenazgo & Aportes Voluntarios</span>
+              <span>{t.donate.badge}</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white uppercase">
-              Donate Us · Apoya el Laboratorio
+              {t.donate.title}
             </h2>
           </div>
           <p className="text-foreground-muted text-base max-w-md font-light">
-            Impulsa el desarrollo de herramientas abiertas, sensores IoT y proyectos experimentales concebidos en Colombia.
+            {t.donate.subtitle}
           </p>
         </div>
 
@@ -102,12 +107,16 @@ export default function DonateSection() {
           {/* Step 1: Destination Selection */}
           <div className="space-y-4">
             <label className="text-xs font-mono uppercase tracking-widest text-foreground-muted flex items-center justify-between">
-              <span>1. Selecciona el destino de tu aporte</span>
-              <span className="text-[var(--color-accent-cyan)] text-[11px] lowercase">transparente y verificable</span>
+              <span>{t.donate.step1Title}</span>
+              <span className="text-[var(--color-accent-cyan)] text-[11px] lowercase">{t.donate.step1Badge}</span>
             </label>
             <div className="grid sm:grid-cols-2 gap-3">
               {wompiConfig.targets.map((target) => {
                 const isSelected = selectedTarget === target.id;
+                const loc = t.donate.targets.find((tg) => tg.id === target.id);
+                const title = loc?.title || target.title;
+                const description = loc?.description || target.description;
+
                 return (
                   <button
                     key={target.id}
@@ -120,11 +129,11 @@ export default function DonateSection() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-sm text-white">{target.title}</span>
+                      <span className="font-bold text-sm text-white">{title}</span>
                       {isSelected && <span className="w-2 h-2 rounded-full bg-[var(--color-accent-cyan)]" />}
                     </div>
                     <p className="text-xs text-foreground-muted font-light leading-relaxed">
-                      {target.description}
+                      {description}
                     </p>
                   </button>
                 );
@@ -135,7 +144,7 @@ export default function DonateSection() {
           {/* Step 2: Amount Selection (Suggested + Custom) */}
           <div className="space-y-4">
             <label className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
-              2. Elige o ingresa el importe (en Pesos Colombianos - COP)
+              {t.donate.step2Title}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {wompiConfig.suggestedAmounts.map((opt) => {
@@ -154,7 +163,7 @@ export default function DonateSection() {
                     <span>{opt.label}</span>
                     {opt.popular && (
                       <span className="block text-[10px] uppercase tracking-widest text-cyan-300 font-sans mt-0.5 font-normal">
-                        Sugerido
+                        {t.donate.popularBadge}
                       </span>
                     )}
                   </button>
@@ -169,16 +178,16 @@ export default function DonateSection() {
                   isCustom ? "border-[var(--color-accent)] ring-1 ring-[var(--color-accent)]" : "border-white/10"
                 }`}
               >
-                <span className="text-foreground-muted font-mono text-sm px-2">Otro Importe COP:</span>
+                <span className="text-foreground-muted font-mono text-sm px-2">{t.donate.customAmountLabel}:</span>
                 <input
                   type="text"
-                  placeholder="Ej: 30000"
+                  placeholder="30000"
                   value={customAmount}
                   onChange={handleCustomChange}
                   className="bg-transparent text-white font-mono text-base outline-none w-full"
                   aria-label="Importe personalizado en COP"
                 />
-                <span className="text-xs font-mono text-foreground-muted shrink-0 pr-2">Mínimo: $10.000 COP</span>
+                <span className="text-xs font-mono text-foreground-muted shrink-0 pr-2">{t.donate.customMinText}</span>
               </div>
             </div>
           </div>
@@ -186,19 +195,19 @@ export default function DonateSection() {
           {/* Step 3: Optional Donor Information */}
           <div className="space-y-4 pt-2">
             <label className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
-              3. Datos del Aportante (Opcional)
+              {t.donate.step3Title}
             </label>
             <div className="grid sm:grid-cols-2 gap-4">
               <input
                 type="text"
-                placeholder="Nombre o seudónimo (Opcional)"
+                placeholder={t.donate.donorNamePlaceholder}
                 value={donorName}
                 onChange={(e) => setDonorName(e.target.value)}
                 className="bg-background/80 border border-white/10 rounded-xl p-3.5 text-sm text-white placeholder-foreground-muted/50 focus:border-[var(--color-accent)] focus:outline-none"
               />
               <input
                 type="email"
-                placeholder="Correo electrónico para comprobante (Opcional)"
+                placeholder={t.donate.donorEmailPlaceholder}
                 value={donorEmail}
                 onChange={(e) => setDonorEmail(e.target.value)}
                 className="bg-background/80 border border-white/10 rounded-xl p-3.5 text-sm text-white placeholder-foreground-muted/50 focus:border-[var(--color-accent)] focus:outline-none"
@@ -209,20 +218,20 @@ export default function DonateSection() {
           {/* Step 4: Summary Box before Payment */}
           <div className="p-5 rounded-2xl bg-background/90 border border-white/10 space-y-3 font-mono text-xs">
             <div className="flex justify-between border-b border-white/5 pb-2 text-sm">
-              <span className="text-foreground-muted">Total Aporte Voluntario:</span>
+              <span className="text-foreground-muted">{t.donate.totalLabel}:</span>
               <span className="text-white font-bold text-base text-[var(--color-accent-cyan)]">
-                ${finalAmountCOP > 0 ? finalAmountCOP.toLocaleString("es-CO") : "0"} COP
+                ${finalAmountCOP > 0 ? finalAmountCOP.toLocaleString(language === "en" ? "en-US" : "es-CO") : "0"} COP
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-foreground-muted">Destino Asignado:</span>
-              <span className="text-white text-right font-sans font-medium">{activeTarget.title}</span>
+              <span className="text-foreground-muted">{t.donate.targetAssignedLabel}:</span>
+              <span className="text-white text-right font-sans font-medium">{activeTargetTitle}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-foreground-muted">Pasarela de Procesamiento:</span>
+              <span className="text-foreground-muted">{t.donate.gatewayLabel}:</span>
               <span className="text-white flex items-center gap-1.5 font-sans">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Wompi Colombia (Bancolombia)</span>
+                <span>{t.donate.gatewayName}</span>
               </span>
             </div>
           </div>
@@ -241,7 +250,7 @@ export default function DonateSection() {
               disabled={loading || finalAmountCOP < wompiConfig.minAmountCOP}
               className="w-full py-4 px-6 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-blue-600/30 hover:shadow-blue-600/50 flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
-              <span>{loading ? "Generando transacción segura con Wompi..." : "Continuar al Pago con Wompi"}</span>
+              <span>{loading ? t.donate.loadingBtn : t.donate.proceedBtn}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -250,13 +259,13 @@ export default function DonateSection() {
               <div className="flex items-start gap-2">
                 <Info className="w-3.5 h-3.5 text-foreground-muted shrink-0 mt-0.5" />
                 <p>
-                  <strong>Aviso legal:</strong> Los aportes son transferencias voluntarias a una persona natural independiente en Colombia para el sostenimiento de sus proyectos tecnológicos y código abierto. <strong>No constituyen donaciones a entidades sin ánimo de lucro (ESAL)</strong> ni otorgan deducciones del impuesto sobre la renta. Consulta las{" "}
+                  <strong>{language === "en" ? "Legal notice" : "Aviso legal"}:</strong> {t.donate.legalNotice}{" "}
                   <Link href="/legal/donate" className="text-[var(--color-accent-cyan)] underline">
-                    Condiciones Legales de Donate Us
+                    {t.donate.donateConditionsLink}
                   </Link>{" "}
-                  y nuestra{" "}
+                  &{" "}
                   <Link href="/legal/pagos-reversiones" className="text-[var(--color-accent-cyan)] underline">
-                    Política de Pagos y Reversiones
+                    {t.donate.reversalsPolicyLink}
                   </Link>.
                 </p>
               </div>

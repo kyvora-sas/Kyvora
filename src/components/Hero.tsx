@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { ArrowRight, Terminal, Layers, Cpu, ShieldCheck } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Hero() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 md:py-36 overflow-hidden">
       {/* Background Lighting & Grid Effects */}
@@ -15,23 +18,23 @@ export default function Hero() {
         {/* Top Technical Badge */}
         <div className="inline-flex items-center gap-3 px-3.5 py-1.5 rounded-full bg-surface border border-white/10 text-xs font-mono text-foreground-muted mb-8 backdrop-blur-md">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-white font-medium">Estudio de Software Independiente</span>
+          <span className="text-white font-medium">{t.hero.badgeStudio}</span>
           <span className="text-white/20">|</span>
-          <span className="text-[var(--color-accent-cyan)]">Colombia</span>
+          <span className="text-[var(--color-accent-cyan)]">{t.hero.badgeCountry}</span>
         </div>
 
         {/* Main Editorial Headline */}
         <div className="space-y-6 max-w-5xl">
           <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase leading-[0.95] text-white">
-            Convertimos ideas complejas en{" "}
+            {t.hero.titlePart1}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-accent)] via-blue-400 to-[var(--color-accent-cyan)]">
-              software real
+              {t.hero.titleGradient}
             </span>
             <span className="text-[var(--color-accent)]">.</span>
           </h1>
 
           <p className="text-lg sm:text-xl md:text-2xl font-light text-foreground-muted max-w-3xl leading-relaxed text-balance">
-            Desarrollamos soluciones web de alto impacto, aplicaciones interactivas, sistemas de datos a medida y automatizaciones con inteligencia artificial. Sin plantillas genéricas. Con ingeniería sólida y lista para producción.
+            {t.hero.description}
           </p>
         </div>
 
@@ -41,7 +44,7 @@ export default function Hero() {
             href="#contacto"
             className="px-8 py-4 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-blue-600/25 hover:shadow-blue-600/40 flex items-center justify-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
-            <span>Iniciar un Proyecto</span>
+            <span>{t.hero.ctaPrimary}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
 
@@ -50,7 +53,7 @@ export default function Hero() {
             className="px-8 py-4 bg-surface hover:bg-surface-elevated text-foreground border border-white/10 hover:border-white/20 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
             <Layers className="w-4 h-4 text-[var(--color-accent-cyan)]" />
-            <span>Explorar Laboratorio</span>
+            <span>{t.hero.ctaSecondary}</span>
           </Link>
         </div>
 
@@ -59,33 +62,33 @@ export default function Hero() {
           <div className="space-y-1">
             <div className="text-foreground-muted/60 uppercase tracking-widest flex items-center gap-2">
               <Terminal className="w-3.5 h-3.5 text-[var(--color-accent-cyan)]" />
-              <span>Stack Core</span>
+              <span>{t.hero.specs.stackTitle}</span>
             </div>
-            <div className="text-white font-medium text-sm">Next.js · React 19 · TS</div>
+            <div className="text-white font-medium text-sm">{t.hero.specs.stackValue}</div>
           </div>
 
           <div className="space-y-1">
             <div className="text-foreground-muted/60 uppercase tracking-widest flex items-center gap-2">
               <Cpu className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-              <span>Sistemas</span>
+              <span>{t.hero.specs.systemsTitle}</span>
             </div>
-            <div className="text-white font-medium text-sm">PostgreSQL · APIs · IoT</div>
+            <div className="text-white font-medium text-sm">{t.hero.specs.systemsValue}</div>
           </div>
 
           <div className="space-y-1">
             <div className="text-foreground-muted/60 uppercase tracking-widest flex items-center gap-2">
               <Layers className="w-3.5 h-3.5 text-blue-400" />
-              <span>Infraestructura</span>
+              <span>{t.hero.specs.infraTitle}</span>
             </div>
-            <div className="text-white font-medium text-sm">Vercel · Cloud · WebSockets</div>
+            <div className="text-white font-medium text-sm">{t.hero.specs.infraValue}</div>
           </div>
 
           <div className="space-y-1">
             <div className="text-foreground-muted/60 uppercase tracking-widest flex items-center gap-2">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Cumplimiento</span>
+              <span>{t.hero.specs.complianceTitle}</span>
             </div>
-            <div className="text-white font-medium text-sm">Ley 1480 · Ley 1581 (Col)</div>
+            <div className="text-white font-medium text-sm">{t.hero.specs.complianceValue}</div>
           </div>
         </div>
       </div>

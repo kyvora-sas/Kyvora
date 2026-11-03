@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, FlaskConical, Layers } from "lucide-react";
 import { GithubIcon } from "@/components/SocialIcons";
 import { projectsConfig, ProjectItem } from "@/config/projects";
+import { useLanguage } from "@/context/LanguageContext";
 
 function StatusBadge({ status, variant }: { status: string; variant: ProjectItem["statusVariant"] }) {
   const styles = {
@@ -22,6 +23,18 @@ function StatusBadge({ status, variant }: { status: string; variant: ProjectItem
 }
 
 export default function LabProjects() {
+  const { t } = useLanguage();
+
+  const getLocalizedProject = (proj: ProjectItem) => {
+    const loc = t.lab.projects[proj.id];
+    return {
+      ...proj,
+      tagline: loc?.tagline || proj.tagline,
+      purpose: loc?.purpose || proj.purpose,
+      status: loc?.status || proj.status,
+    };
+  };
+
   return (
     <section id="laboratorio" className="py-24 md:py-36 bg-background relative">
       <div className="max-w-7xl mx-auto px-6">
@@ -30,14 +43,14 @@ export default function LabProjects() {
           <div>
             <div className="flex items-center gap-3 text-xs font-mono tracking-widest uppercase text-[var(--color-accent-cyan)] mb-3">
               <FlaskConical className="w-4 h-4 text-[var(--color-accent)]" />
-              <span>I+D · Prototipos & Proyectos Verificados</span>
+              <span>{t.lab.badge}</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white uppercase">
-              Laboratorio de Proyectos
+              {t.lab.title}
             </h2>
           </div>
           <p className="text-foreground-muted text-base max-w-md font-light">
-            Iniciativas de software concebidas y probadas internamente por KYVORA. Mostramos únicamente datos respaldados por código y desarrollo real.
+            {t.lab.subtitle}
           </p>
         </div>
 
@@ -45,7 +58,8 @@ export default function LabProjects() {
         <div className="grid md:grid-cols-12 gap-8 md:gap-12 items-start">
           {/* Project 1: Pulso (Large feature) */}
           {(() => {
-            const pulso = projectsConfig.find((p) => p.id === "pulso")!;
+            const rawPulso = projectsConfig.find((p) => p.id === "pulso")!;
+            const pulso = getLocalizedProject(rawPulso);
             return (
               <div className="md:col-span-7 bg-surface rounded-2xl border border-white/10 hover:border-[var(--color-accent)]/50 transition-all duration-300 overflow-hidden group">
                 <div className="aspect-[16/10] bg-[#050811] relative overflow-hidden">
@@ -69,10 +83,10 @@ export default function LabProjects() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-foreground-muted hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono"
-                        aria-label={`Ver repositorio de ${pulso.name}`}
+                        aria-label={`${t.lab.repoBtn} ${pulso.name}`}
                       >
                         <GithubIcon className="w-4 h-4" />
-                        <span>Repositorio</span>
+                        <span>{t.lab.repoBtn}</span>
                       </a>
                     )}
                   </div>
@@ -88,7 +102,7 @@ export default function LabProjects() {
 
                   <div className="pt-2 text-xs text-foreground-muted/80 space-y-1">
                     <strong className="text-white block font-mono uppercase tracking-wider text-[11px]">
-                      Propósito técnico:
+                      {t.lab.purposeLabel}
                     </strong>
                     <p className="font-light">{pulso.purpose}</p>
                   </div>
@@ -110,7 +124,8 @@ export default function LabProjects() {
 
           {/* Project 2: QuakeNet (Vertical feature) */}
           {(() => {
-            const quakeNet = projectsConfig.find((p) => p.id === "quakenet")!;
+            const rawQuakeNet = projectsConfig.find((p) => p.id === "quakenet")!;
+            const quakeNet = getLocalizedProject(rawQuakeNet);
             return (
               <div className="md:col-span-5 bg-surface rounded-2xl border border-white/10 hover:border-[var(--color-accent)]/50 transition-all duration-300 overflow-hidden group">
                 <div className="aspect-[4/3] bg-[#050811] relative overflow-hidden">
@@ -134,10 +149,10 @@ export default function LabProjects() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-foreground-muted hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono"
-                        aria-label={`Ver repositorio de ${quakeNet.name}`}
+                        aria-label={`${t.lab.repoBtn} ${quakeNet.name}`}
                       >
                         <GithubIcon className="w-4 h-4" />
-                        <span>Repositorio</span>
+                        <span>{t.lab.repoBtn}</span>
                       </a>
                     )}
                   </div>
@@ -153,7 +168,7 @@ export default function LabProjects() {
 
                   <div className="pt-2 text-xs text-foreground-muted/80 space-y-1">
                     <strong className="text-white block font-mono uppercase tracking-wider text-[11px]">
-                      Propósito técnico:
+                      {t.lab.purposeLabel}
                     </strong>
                     <p className="font-light">{quakeNet.purpose}</p>
                   </div>
@@ -178,77 +193,80 @@ export default function LabProjects() {
         <div className="mt-8 md:mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
           {projectsConfig
             .filter((p) => p.id !== "pulso" && p.id !== "quakenet")
-            .map((proj) => (
-              <div
-                key={proj.id}
-                className="rounded-2xl bg-surface border border-white/10 hover:border-[var(--color-accent)]/50 transition-all duration-300 overflow-hidden flex flex-col justify-between group h-full"
-              >
-                {proj.image && (
-                  <div className="aspect-[16/10] bg-[#050811] relative overflow-hidden">
-                    <Image
-                      src={proj.image}
-                      alt={proj.imageAlt || proj.name}
-                      fill
-                      className="object-cover object-top opacity-85 group-hover:opacity-100 group-hover:scale-[1.02] transition-all duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent pointer-events-none" />
-                  </div>
-                )}
+            .map((rawProj) => {
+              const proj = getLocalizedProject(rawProj);
+              return (
+                <div
+                  key={proj.id}
+                  className="rounded-2xl bg-surface border border-white/10 hover:border-[var(--color-accent)]/50 transition-all duration-300 overflow-hidden flex flex-col justify-between group h-full"
+                >
+                  {proj.image && (
+                    <div className="aspect-[16/10] bg-[#050811] relative overflow-hidden">
+                      <Image
+                        src={proj.image}
+                        alt={proj.imageAlt || proj.name}
+                        fill
+                        className="object-cover object-top opacity-85 group-hover:opacity-100 group-hover:scale-[1.02] transition-all duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent pointer-events-none" />
+                    </div>
+                  )}
 
-                <div className="p-6 md:p-8 flex flex-col justify-between flex-1 space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <StatusBadge status={proj.status} variant={proj.statusVariant} />
-                      {proj.links?.repo ? (
-                        <a
-                          href={proj.links.repo}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-foreground-muted hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono"
-                          aria-label={`Ver repositorio de ${proj.name}`}
+                  <div className="p-6 md:p-8 flex flex-col justify-between flex-1 space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <StatusBadge status={proj.status} variant={proj.statusVariant} />
+                        {proj.links?.repo ? (
+                          <a
+                            href={proj.links.repo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-foreground-muted hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono"
+                            aria-label={`${t.lab.repoBtn} ${proj.name}`}
+                          >
+                            <GithubIcon className="w-4 h-4" />
+                            <span>{t.lab.repoBtn}</span>
+                          </a>
+                        ) : (
+                          <span className="text-xs font-mono text-foreground-muted/60 uppercase">
+                            {t.lab.internalPrototype}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-2xl font-bold tracking-tight text-white flex items-center justify-between">
+                        <span>{proj.name}</span>
+                        {proj.links?.repo && (
+                          <ArrowUpRight className="w-5 h-5 text-foreground-muted group-hover:text-[var(--color-accent-cyan)] transition-colors" />
+                        )}
+                      </h3>
+
+                      <p className="text-sm text-foreground-muted font-light leading-relaxed">
+                        {proj.tagline}
+                      </p>
+
+                      <div className="text-xs text-foreground-muted/80 space-y-1">
+                        <strong className="text-white block font-mono uppercase tracking-wider text-[11px]">
+                          {t.lab.purposeLabel}
+                        </strong>
+                        <p className="font-light">{proj.purpose}</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex flex-wrap gap-2">
+                      {proj.technologies.map((tech) => (
+                        <span
+                          key={tech}
+                          className="px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs font-mono text-foreground-muted"
                         >
-                          <GithubIcon className="w-4 h-4" />
-                          <span>Repositorio</span>
-                        </a>
-                      ) : (
-                        <span className="text-xs font-mono text-foreground-muted/60 uppercase">
-                          Prototipo Interno
+                          {tech}
                         </span>
-                      )}
+                      ))}
                     </div>
-
-                    <h3 className="text-2xl font-bold tracking-tight text-white flex items-center justify-between">
-                      <span>{proj.name}</span>
-                      {proj.links?.repo && (
-                        <ArrowUpRight className="w-5 h-5 text-foreground-muted group-hover:text-[var(--color-accent-cyan)] transition-colors" />
-                      )}
-                    </h3>
-
-                    <p className="text-sm text-foreground-muted font-light leading-relaxed">
-                      {proj.tagline}
-                    </p>
-
-                    <div className="text-xs text-foreground-muted/80 space-y-1">
-                      <strong className="text-white block font-mono uppercase tracking-wider text-[11px]">
-                        Propósito técnico:
-                      </strong>
-                      <p className="font-light">{proj.purpose}</p>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-white/5 flex flex-wrap gap-2">
-                    {proj.technologies.map((tech) => (
-                      <span
-                        key={tech}
-                        className="px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs font-mono text-foreground-muted"
-                      >
-                        {tech}
-                      </span>
-                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
 
         {/* Lab Contribution Notice */}
@@ -256,14 +274,14 @@ export default function LabProjects() {
           <div className="flex items-center gap-3">
             <Layers className="w-5 h-5 text-[var(--color-accent-cyan)] shrink-0" />
             <p className="text-xs md:text-sm text-foreground-muted font-light">
-              ¿Quieres apoyar el desarrollo de sensores en QuakeNet o la infraestructura de Pulso?
+              {t.lab.contributionText}
             </p>
           </div>
           <Link
             href="#donate"
             className="px-4 py-2 bg-[var(--color-accent)]/20 hover:bg-[var(--color-accent)]/30 border border-[var(--color-accent)]/40 text-[var(--color-accent-cyan)] rounded-lg text-xs font-mono uppercase tracking-wider transition-colors shrink-0"
           >
-            Aportar a un Proyecto en Donate Us
+            {t.lab.contributionBtn}
           </Link>
         </div>
       </div>

@@ -6,8 +6,10 @@ export interface NavItem {
 export const siteConfig = {
   name: "Kyvora",
   legalName: "Kyvora",
-  tradeName: "Kyvora Studio & Software",
+  tradeName: "Kyvora Studio & Lab",
   operatorType: "Persona Natural Independiente en Colombia",
+  primaryClaim: "Tecnología con intención.",
+  secondaryClaim: "Ideas que toman forma.",
   tagline: "Tecnología para ideas que todavía no existen.",
   description:
     "Estudio tecnológico independiente en Colombia. Desarrollamos soluciones web modernas, aplicaciones escalables, sistemas a medida y automatizaciones con IA.",
@@ -16,10 +18,11 @@ export const siteConfig = {
   currency: "COP",
 
   contacts: {
-    whatsappNumber: "+57 315 201 1203 - +57 318 324 8279",
+    whatsappNumber: "+57 315 201 1203",
     whatsappUrl: "https://wa.me/573152011203?text=Hola%20Kyvora,%20me%20gustar%C3%ADa%20conversar%20sobre%20un%20proyecto",
     email: "kyvorasas@gmail.com",
     githubUrl: "https://github.com/Kyvora-org",
+    instagramHandle: "@_kyvora_",
     instagramUrl: "https://www.instagram.com/_kyvora_/",
     sicUrl: "https://www.sic.gov.co/",
   },
@@ -29,6 +32,7 @@ export const siteConfig = {
     { label: "Laboratorio", href: "#laboratorio" },
     { label: "Precios", href: "#precios" },
     { label: "Proceso", href: "#proceso" },
+    { label: "Recursos", href: "/recursos" },
     { label: "Donate Us", href: "#donate" },
     { label: "Contacto", href: "#contacto" },
   ] as NavItem[],

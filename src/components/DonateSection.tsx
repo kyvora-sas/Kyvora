@@ -84,33 +84,40 @@ export default function DonateSection() {
   };
 
   return (
-    <section id="donate" className="py-24 md:py-36 bg-surface/30 border-t border-white/10 relative">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="donate" className="py-20 md:py-28 bg-[#080B12] border-t border-[#252D3A] relative">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="mb-16 md:mb-20 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-8">
-          <div>
-            <div className="flex items-center gap-3 text-xs font-mono tracking-widest uppercase text-[var(--color-accent-cyan)] mb-3">
-              <HeartHandshake className="w-4 h-4 text-[var(--color-accent)]" />
+        <div className="mb-14 md:mb-18 flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[#252D3A] pb-8">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5 text-xs font-mono tracking-[0.18em] uppercase text-[#5CA8FF]">
+              <HeartHandshake className="w-4 h-4 text-[#1677FF]" aria-hidden="true" />
               <span>{t.donate.badge}</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white uppercase">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
               {t.donate.title}
             </h2>
           </div>
-          <p className="text-foreground-muted text-base max-w-md font-light">
+          <p className="text-[#9AA5B8] text-sm sm:text-base max-w-md font-light leading-relaxed">
             {t.donate.subtitle}
           </p>
         </div>
 
         {/* Contribution Interface Card */}
-        <div className="max-w-4xl mx-auto rounded-3xl bg-surface border border-white/10 p-6 sm:p-10 md:p-12 shadow-2xl shadow-black/80 space-y-10">
+        <div className="max-w-4xl mx-auto rounded-2xl bg-[#0D121D] border border-[#252D3A] p-6 sm:p-10 md:p-12 shadow-2xl shadow-black/70 space-y-10">
           {/* Step 1: Destination Selection */}
           <div className="space-y-4">
-            <label className="text-xs font-mono uppercase tracking-widest text-foreground-muted flex items-center justify-between">
+            <div
+              id="donate-target-label"
+              className="text-xs font-mono uppercase tracking-widest text-foreground-muted flex items-center justify-between"
+            >
               <span>{t.donate.step1Title}</span>
-              <span className="text-[var(--color-accent-cyan)] text-[11px] lowercase">{t.donate.step1Badge}</span>
-            </label>
-            <div className="grid sm:grid-cols-2 gap-3">
+              <span className="text-[#5CA8FF] text-[11px] lowercase">{t.donate.step1Badge}</span>
+            </div>
+            <div
+              role="group"
+              aria-labelledby="donate-target-label"
+              className="grid sm:grid-cols-2 gap-3"
+            >
               {wompiConfig.targets.map((target) => {
                 const isSelected = selectedTarget === target.id;
                 const loc = t.donate.targets.find((tg) => tg.id === target.id);
@@ -121,8 +128,9 @@ export default function DonateSection() {
                   <button
                     key={target.id}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => setSelectedTarget(target.id)}
-                    className={`p-4 rounded-xl text-left border transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
+                    className={`p-4 rounded-xl text-left border transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF] ${
                       isSelected
                         ? "bg-background border-[var(--color-accent)] shadow-md shadow-blue-900/30 ring-1 ring-[var(--color-accent)]"
                         : "bg-surface/50 border-white/5 hover:border-white/15"
@@ -130,7 +138,7 @@ export default function DonateSection() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-sm text-white">{title}</span>
-                      {isSelected && <span className="w-2 h-2 rounded-full bg-[var(--color-accent-cyan)]" />}
+                      {isSelected && <span className="w-2 h-2 rounded-full bg-[#2B85FF]" aria-hidden="true" />}
                     </div>
                     <p className="text-xs text-foreground-muted font-light leading-relaxed">
                       {description}
@@ -143,18 +151,26 @@ export default function DonateSection() {
 
           {/* Step 2: Amount Selection (Suggested + Custom) */}
           <div className="space-y-4">
-            <label className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
+            <div
+              id="donate-amount-label"
+              className="text-xs font-mono uppercase tracking-widest text-foreground-muted block"
+            >
               {t.donate.step2Title}
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            </div>
+            <div
+              role="group"
+              aria-labelledby="donate-amount-label"
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+            >
               {wompiConfig.suggestedAmounts.map((opt) => {
                 const isSelected = !isCustom && selectedAmount === opt.amountCOP;
                 return (
                   <button
                     key={opt.amountCOP}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => handleSelectSuggested(opt.amountCOP)}
-                    className={`py-3.5 px-4 rounded-xl text-center border font-mono font-bold text-sm transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
+                    className={`py-3.5 px-4 rounded-xl text-center border font-mono font-bold text-sm transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF] ${
                       isSelected
                         ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)] shadow-lg shadow-blue-600/30"
                         : "bg-background/80 text-foreground-muted border-white/10 hover:border-white/20 hover:text-white"
@@ -162,7 +178,7 @@ export default function DonateSection() {
                   >
                     <span>{opt.label}</span>
                     {opt.popular && (
-                      <span className="block text-[10px] uppercase tracking-widest text-cyan-300 font-sans mt-0.5 font-normal">
+                      <span className="block text-[10px] uppercase tracking-widest text-[#AFC4E8] font-sans mt-0.5 font-normal">
                         {t.donate.popularBadge}
                       </span>
                     )}
@@ -174,32 +190,39 @@ export default function DonateSection() {
             {/* Custom Amount Input */}
             <div className="mt-3">
               <div
-                className={`flex items-center gap-3 p-3.5 rounded-xl border bg-background/80 transition-colors ${
+                className={`flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 p-3.5 rounded-xl border bg-background/80 transition-colors ${
                   isCustom ? "border-[var(--color-accent)] ring-1 ring-[var(--color-accent)]" : "border-white/10"
                 }`}
               >
-                <span className="text-foreground-muted font-mono text-sm px-2">{t.donate.customAmountLabel}:</span>
+                <label
+                  htmlFor="donate-custom-amount"
+                  className="text-foreground-muted font-mono text-xs sm:text-sm px-1 sm:px-2 shrink-0 whitespace-nowrap"
+                >
+                  {t.donate.customAmountLabel}
+                </label>
                 <input
+                  id="donate-custom-amount"
                   type="text"
                   placeholder="30000"
                   value={customAmount}
                   onChange={handleCustomChange}
-                  className="bg-transparent text-white font-mono text-base outline-none w-full"
-                  aria-label="Importe personalizado en COP"
+                  className="bg-transparent text-white font-mono text-base outline-none flex-1 min-w-[120px] py-1.5"
+                  aria-label={language === "en" ? "Custom amount in COP" : "Importe personalizado en COP"}
                 />
-                <span className="text-xs font-mono text-foreground-muted shrink-0 pr-2">{t.donate.customMinText}</span>
+                <span className="text-xs font-mono text-foreground-muted shrink-0 sm:pr-2">{t.donate.customMinText}</span>
               </div>
             </div>
           </div>
 
           {/* Step 3: Optional Donor Information */}
           <div className="space-y-4 pt-2">
-            <label className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
+            <div className="text-xs font-mono uppercase tracking-widest text-foreground-muted block">
               {t.donate.step3Title}
-            </label>
+            </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <input
                 type="text"
+                aria-label={t.donate.donorNamePlaceholder}
                 placeholder={t.donate.donorNamePlaceholder}
                 value={donorName}
                 onChange={(e) => setDonorName(e.target.value)}
@@ -207,6 +230,7 @@ export default function DonateSection() {
               />
               <input
                 type="email"
+                aria-label={t.donate.donorEmailPlaceholder}
                 placeholder={t.donate.donorEmailPlaceholder}
                 value={donorEmail}
                 onChange={(e) => setDonorEmail(e.target.value)}
@@ -219,7 +243,7 @@ export default function DonateSection() {
           <div className="p-5 rounded-2xl bg-background/90 border border-white/10 space-y-3 font-mono text-xs">
             <div className="flex justify-between border-b border-white/5 pb-2 text-sm">
               <span className="text-foreground-muted">{t.donate.totalLabel}:</span>
-              <span className="text-white font-bold text-base text-[var(--color-accent-cyan)]">
+              <span className="font-bold text-base text-[#AFC4E8]">
                 ${finalAmountCOP > 0 ? finalAmountCOP.toLocaleString(language === "en" ? "en-US" : "es-CO") : "0"} COP
               </span>
             </div>
@@ -260,11 +284,11 @@ export default function DonateSection() {
                 <Info className="w-3.5 h-3.5 text-foreground-muted shrink-0 mt-0.5" />
                 <p>
                   <strong>{language === "en" ? "Legal notice" : "Aviso legal"}:</strong> {t.donate.legalNotice}{" "}
-                  <Link href="/legal/donate" className="text-[var(--color-accent-cyan)] underline">
+                  <Link href="/legal/donate" className="text-[#5CA8FF] underline">
                     {t.donate.donateConditionsLink}
                   </Link>{" "}
-                  &{" "}
-                  <Link href="/legal/pagos-reversiones" className="text-[var(--color-accent-cyan)] underline">
+                  {language === "en" ? "&" : "y"}{" "}
+                  <Link href="/legal/pagos-reversiones" className="text-[#5CA8FF] underline">
                     {t.donate.reversalsPolicyLink}
                   </Link>.
                 </p>

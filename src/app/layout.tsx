@@ -19,23 +19,26 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: "Kyvora — Estudio Tecnológico y de Software en Colombia",
-    template: "%s | Kyvora",
+    default: "KYVORA — Tecnología con intención | Estudio Tecnológico y Lab en Colombia",
+    template: "%s | KYVORA",
   },
   description: siteConfig.description,
   keywords: [
+    "KYVORA",
+    "KYVORA Studio",
+    "KYVORA Lab",
     "Desarrollo web Colombia",
-    "Desarrollo de software a la medida",
-    "Aplicaciones Next.js Colombia",
+    "Desarrollo de software a la medida Colombia",
+    "Aplicaciones web Next.js Colombia",
     "Automatización e Inteligencia Artificial",
-    "Estudio tecnológico independiente",
-    "Kyvora",
+    "Estudio tecnológico Valle del Cauca",
     "QuakeNet",
     "Pulso",
+    "VoiceTranslate",
   ],
-  authors: [{ name: "Kyvora", url: siteConfig.url }],
-  creator: "Kyvora",
-  publisher: "Kyvora",
+  authors: [{ name: "KYVORA", url: siteConfig.url }],
+  creator: "KYVORA",
+  publisher: "KYVORA",
   alternates: {
     canonical: "/",
     languages: {
@@ -44,16 +47,17 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Kyvora — Software Real para Ideas Complejas",
+    title: "KYVORA — Tecnología con intención | Studio & Lab",
     description: siteConfig.description,
     url: siteConfig.url,
-    siteName: siteConfig.name,
+    siteName: "KYVORA",
     locale: "es_CO",
+    alternateLocale: ["en_US"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kyvora — Estudio Tecnológico y de Software",
+    title: "KYVORA — Tecnología con intención | Estudio Tecnológico",
     description: siteConfig.description,
   },
   robots: {
@@ -78,12 +82,27 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@graph": [
       {
+        "@type": "WebSite",
+        "@id": `${siteConfig.url}/#website`,
+        url: siteConfig.url,
+        name: "KYVORA",
+        description: siteConfig.description,
+        inLanguage: ["es-CO", "en"],
+        publisher: {
+          "@id": `${siteConfig.url}/#organization`,
+        },
+      },
+      {
         "@type": "Organization",
         "@id": `${siteConfig.url}/#organization`,
-        name: siteConfig.name,
+        name: "KYVORA",
         url: siteConfig.url,
-        logo: `${siteConfig.url}/img/logo.png`,
+        logo: {
+          "@type": "ImageObject",
+          url: `${siteConfig.url}/icon.svg`,
+        },
         description: siteConfig.description,
+        email: siteConfig.contacts.email,
         sameAs: [
           siteConfig.contacts.githubUrl,
           siteConfig.contacts.instagramUrl,
@@ -91,34 +110,46 @@ export default function RootLayout({
         contactPoint: {
           "@type": "ContactPoint",
           telephone: siteConfig.contacts.whatsappNumber,
+          email: siteConfig.contacts.email,
           contactType: "customer service",
-          areaServed: "CO",
-          availableLanguage: ["Spanish"],
+          areaServed: ["CO", "Valle del Cauca"],
+          availableLanguage: ["Spanish", "English"],
         },
       },
       {
         "@type": "ProfessionalService",
         "@id": `${siteConfig.url}/#service`,
-        name: siteConfig.name,
+        name: "KYVORA Studio",
         url: siteConfig.url,
+        description: siteConfig.description,
         priceRange: "$$",
+        areaServed: [
+          { "@type": "Country", name: "Colombia" },
+          { "@type": "AdministrativeArea", name: "Valle del Cauca" },
+        ],
         address: {
           "@type": "PostalAddress",
+          addressRegion: "Valle del Cauca",
           addressCountry: "CO",
+        },
+        provider: {
+          "@id": `${siteConfig.url}/#organization`,
         },
       },
     ],
   };
 
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className={`${spaceGrotesk.variable} ${inter.variable} dark`}>
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
         />
       </head>
-      <body className={`${spaceGrotesk.variable} ${inter.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className="font-sans antialiased bg-background text-foreground">
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowLeft, ShieldCheck, Scale, ExternalLink, ChevronRight } from "lucide-react";
-import logoImg from "@/img/logo.png";
+import KyvoraLogo from "@/components/brand/KyvoraLogo";
 import { siteConfig } from "@/config/site";
 import { legalConfig } from "@/config/legal";
 import PrintButton from "@/components/PrintButton";
@@ -44,12 +43,19 @@ export default function LegalLayout({
       {/* Top Header */}
       <header className="border-b border-white/10 bg-surface/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 no-print">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400">
-            <Image src={logoImg} alt="KYVORA Logo" width={110} height={36} className="object-contain" priority />
+          <Link href="/" className="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF] rounded-lg p-1" aria-label="KYVORA - Inicio">
+            <KyvoraLogo variant="lockup" size="sm" />
           </Link>
           <div className="flex items-center gap-3 sm:gap-4 text-sm">
             <LanguageToggle />
-            <PrintButton />
+            <PrintButton
+              label={isEn ? "Print / Save PDF" : "Imprimir / Guardar PDF"}
+              ariaLabel={
+                isEn
+                  ? "Print this legal document or save it as PDF"
+                  : "Imprimir este documento legal o guardarlo en PDF"
+              }
+            />
             <Link
               href="/"
               className="flex items-center gap-2 text-foreground-muted hover:text-white transition-colors text-xs font-mono"
@@ -64,9 +70,9 @@ export default function LegalLayout({
       {/* Legal Sub-Navigation Bar (Sticky underneath on desktop) */}
       <nav
         aria-label={isEn ? "Legal documents navigation" : "Navegación entre documentos legales"}
-        className="border-b border-white/5 bg-background/90 backdrop-blur-sm px-6 py-2.5 overflow-x-auto no-print"
+        className="border-b border-white/5 bg-background/90 backdrop-blur-sm px-4 sm:px-6 py-2.5 no-print"
       >
-        <div className="max-w-6xl mx-auto flex items-center gap-2 text-xs font-mono whitespace-nowrap scrollbar-none">
+        <div className="max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 text-xs font-mono whitespace-nowrap overflow-x-auto lg:overflow-visible lg:flex-wrap lg:whitespace-normal [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="text-foreground-muted/60 uppercase tracking-widest mr-2 hidden sm:inline">
             {isEn ? "Sections:" : "Apartados:"}
           </span>

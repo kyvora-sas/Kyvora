@@ -1,46 +1,60 @@
 "use client";
 
-import { useLanguage } from "@/context/LanguageContext";
+import { usePathname, useRouter } from "next/navigation";
 import { Globe } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { resolveAlternateRecursosPath } from "@/content/recursos/helpers";
 
 export default function LanguageToggle({ className = "" }: { className?: string }) {
   const { language, setLanguage } = useLanguage();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSelect = (targetLang: "es" | "en") => {
+    setLanguage(targetLang);
+    if (pathname?.startsWith("/recursos")) {
+      const nextRoute = resolveAlternateRecursosPath(pathname, targetLang);
+      if (nextRoute !== pathname) {
+        router.push(nextRoute);
+      }
+    }
+  };
 
   return (
     <div
       role="group"
       aria-label="Selector de idioma / Language selector"
-      className={`inline-flex items-center gap-1 p-1 rounded-xl bg-surface/80 border border-white/10 backdrop-blur-md font-mono text-xs ${className}`}
+      className={`inline-flex items-center gap-0.5 min-[360px]:gap-1 p-0.5 min-[360px]:p-1 rounded-xl bg-[#0D121D]/90 border border-[rgba(175,196,232,0.14)] backdrop-blur-md font-mono text-xs ${className}`}
     >
-      <div className="pl-1.5 pr-0.5 text-foreground-muted/60 flex items-center">
-        <Globe className="w-3.5 h-3.5 text-[var(--color-accent-cyan)]" aria-hidden="true" />
+      <div className="hidden min-[360px]:flex pl-1.5 pr-0.5 text-[#8F9BB3] items-center">
+        <Globe className="w-3.5 h-3.5 text-[#2B85FF]" aria-hidden="true" />
       </div>
 
       <button
         type="button"
-        onClick={() => setLanguage("es")}
+        onClick={() => handleSelect("es")}
         aria-pressed={language === "es"}
         aria-label="Cambiar a Español"
-        className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+        className={`px-2 py-1.5 min-h-[34px] sm:min-h-0 rounded-lg font-bold transition-all cursor-pointer ${
           language === "es"
-            ? "bg-[var(--color-accent)]/20 text-[var(--color-accent-cyan)] border border-[var(--color-accent)]/40 shadow-sm"
-            : "text-foreground-muted hover:text-white border border-transparent"
+            ? "bg-[#1677FF]/20 text-white border border-[#1677FF]/55 shadow-sm"
+            : "text-[#8F9BB3] hover:text-white border border-transparent"
         }`}
       >
         ES
       </button>
 
-      <span className="text-white/20 select-none text-[10px]">/</span>
+      <span className="text-[#252D3A] select-none text-[10px]">/</span>
 
       <button
         type="button"
-        onClick={() => setLanguage("en")}
+        onClick={() => handleSelect("en")}
         aria-pressed={language === "en"}
         aria-label="Switch to English"
-        className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+        className={`px-2 py-1.5 min-h-[34px] sm:min-h-0 rounded-lg font-bold transition-all cursor-pointer ${
           language === "en"
-            ? "bg-[var(--color-accent)]/20 text-[var(--color-accent-cyan)] border border-[var(--color-accent)]/40 shadow-sm"
-            : "text-foreground-muted hover:text-white border border-transparent"
+            ? "bg-[#1677FF]/20 text-white border border-[#1677FF]/55 shadow-sm"
+            : "text-[#8F9BB3] hover:text-white border border-transparent"
         }`}
       >
         EN
@@ -48,4 +62,3 @@ export default function LanguageToggle({ className = "" }: { className?: string 
     </div>
   );
 }
-

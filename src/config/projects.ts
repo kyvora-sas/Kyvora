@@ -61,14 +61,14 @@ export const projectsConfig: ProjectItem[] = [
   {
     id: "kyvora-studio",
     name: "Kyvora Studio",
-    tagline: "Entorno interno de componentes y arquitectura para despliegue veloz.",
+    tagline: "Editor de video no lineal (NLE) multipista para escritorio y web.",
     purpose:
-      "Biblioteca de patrones de diseño, utilidades de seguridad y módulos base reutilizables que aceleran el ciclo de vida de los productos desarrollados por KYVORA.",
-    technologies: ["TypeScript", "React 19", "Tailwind CSS", "Next.js"],
+      "Suite de edición y postproducción de video en desarrollo con arquitectura monorepo y streaming nativo en Windows. Incluye línea de tiempo multipista (video, audio y texto), proyectos .XTP, monitor 1080p a 60 fps, corte, duplicación y renderizado multi-códec con FFmpeg 7.",
+    technologies: ["TypeScript", "React 19", "Rust", "Tauri 2", "FFmpeg 7"],
     status: "En Desarrollo",
     statusVariant: "purple",
     image: kyvoraStudioImg,
-    imageAlt: "Captura de la interfaz de Kyvora Studio",
+    imageAlt: "Captura de la interfaz de Kyvora Studio mostrando línea de tiempo multipista y monitor de previsualización",
     links: {
       repo: "https://github.com/Kyvora-org",
     },
@@ -77,10 +77,10 @@ export const projectsConfig: ProjectItem[] = [
   {
     id: "pulsai",
     name: "PulsAI",
-    tagline: "Módulo de inteligencia y automatización contextual para flujos de trabajo.",
+    tagline: "Asistente analítico conectado a modelos locales con búsqueda web, documentos y voz.",
     purpose:
-      "Prototipo de asistentes de IA orientados a procesar tareas repetitivas, clasificación de mensajes y automatización de procesos internos para pequeñas operaciones.",
-    technologies: ["Python", "LangChain", "Node.js", "Vector DB"],
+      "Prototipo experimental de PulsAI Analytics conectado al modelo local gemma4:e2b mediante Ollama, con herramientas integradas de búsqueda web, lectura de documentos, entrada de imagen y soporte de voz.",
+    technologies: ["Ollama", "gemma4:e2b", "Web Search", "Docs", "Voice UI"],
     status: "Experimental",
     statusVariant: "warning",
     image: pulsAiImg,

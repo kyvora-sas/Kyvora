@@ -7,7 +7,7 @@ import Image from "next/image";
 import { CheckCircle2, Clock, XCircle, ArrowLeft, RefreshCw, ShieldAlert, HeartHandshake } from "lucide-react";
 import logoImg from "@/img/logo.png";
 import { siteConfig } from "@/config/site";
-import { parseWompiReturnParams } from "@/lib/wompi";
+import { parseWompiReturnParams } from "@/lib/wompi-url";
 
 interface TransactionStatusResponse {
   reference: string;

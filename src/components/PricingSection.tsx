@@ -4,31 +4,49 @@ import Link from "next/link";
 import { Check, ArrowRight, Info } from "lucide-react";
 import { pricingConfig } from "@/config/pricing";
 import { useLanguage } from "@/context/LanguageContext";
+import { triggerContactServiceSelection } from "@/lib/service-selection";
+import { Container } from "@/components/ui";
+import {
+  KineticHeadline,
+  MotionItem,
+  MotionReveal,
+  MotionStagger,
+} from "@/components/motion/MotionPrimitives";
 
 export default function PricingSection() {
   const { t, language } = useLanguage();
 
   return (
-    <section id="precios" className="py-24 md:py-36 bg-surface/40 border-t border-white/10 relative">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Section Header */}
-        <div className="mb-16 md:mb-24 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-8">
-          <div>
-            <div className="flex items-center gap-3 text-xs font-mono tracking-widest uppercase text-[var(--color-accent-cyan)] mb-3">
-              <span className="w-2 h-2 rounded-full bg-[var(--color-accent)]" />
+    <section
+      id="precios"
+      aria-labelledby="pricing-heading"
+      className="py-20 md:py-28 bg-[#0D121D] border-t border-[#252D3A]/80 relative"
+    >
+      <Container>
+        {/* Header alineado al sistema visual KYVORA Studio */}
+        <div className="mb-14 md:mb-18 flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[#252D3A] pb-8">
+          <MotionReveal className="space-y-3">
+            <div className="inline-flex items-center gap-2.5 text-xs font-mono tracking-[0.18em] uppercase text-[#2B85FF]">
+              <span className="w-2 h-2 rounded-full bg-[#1677FF]" />
               <span>{t.pricing.badge}</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white uppercase">
-              {t.pricing.title}
-            </h2>
-          </div>
-          <p className="text-foreground-muted text-base max-w-md font-light">
-            {t.pricing.subtitle}
-          </p>
+            <KineticHeadline
+              as="h2"
+              className="font-display text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white"
+            >
+              <span id="pricing-heading">{t.pricing.title}</span>
+            </KineticHeadline>
+          </MotionReveal>
+
+          <MotionReveal delay={0.08} className="lg:max-w-md">
+            <p className="text-[#9AA5B8] text-sm sm:text-base font-light leading-relaxed">
+              {t.pricing.subtitle}
+            </p>
+          </MotionReveal>
         </div>
 
-        {/* Pricing Tiers Grid */}
-        <div className="grid md:grid-cols-3 gap-8 items-stretch">
+        {/* Tarifas referenciales y modelos de cotización */}
+        <MotionStagger className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-7 items-stretch">
           {pricingConfig.tiers.map((tier) => {
             const locTier = t.pricing.tiers.find((pt) => pt.id === tier.id);
             const title = locTier?.title || tier.title;
@@ -38,114 +56,121 @@ export default function PricingSection() {
             const priceNote = locTier?.priceNote || tier.priceNote;
             const deliverables = locTier?.deliverables || tier.deliverables;
             const ctaText = locTier?.ctaText || tier.ctaText;
+            const isHighlighted = tier.id === "mvp-web-app";
 
             return (
-              <div
-                key={tier.id}
-                className={`rounded-2xl p-6 md:p-8 flex flex-col justify-between transition-all duration-300 ${
-                  tier.category === "alcance-variable"
-                    ? "bg-surface border-2 border-[var(--color-accent)]/60 shadow-2xl shadow-blue-900/20 relative"
-                    : "bg-surface/70 border border-white/10 hover:border-white/20"
-                }`}
-              >
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-mono uppercase tracking-widest px-2.5 py-1 rounded bg-white/5 border border-white/5 text-[var(--color-accent-cyan)]">
-                      {badge}
-                    </span>
-                    <span className="text-xs text-foreground-muted font-mono">
-                      {deliveryTime}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-bold tracking-tight text-white mb-2">
-                      {title}
-                    </h3>
-                    <p className="text-sm text-foreground-muted font-light leading-relaxed">
-                      {description}
-                    </p>
-                  </div>
-
-                  <div className="py-4 border-y border-white/5 space-y-1">
-                    {tier.startingPriceCOP ? (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl sm:text-4xl font-black text-white font-mono">
-                          ${tier.startingPriceCOP.toLocaleString(language === "en" ? "en-US" : "es-CO")}
+              <MotionItem key={tier.id} className="flex">
+                <div
+                  className={`w-full rounded-2xl p-6 sm:p-8 flex flex-col justify-between transition-colors border ${
+                    isHighlighted
+                      ? "bg-[#141B2B] border-[#1677FF]/60 shadow-2xl shadow-black/60"
+                      : "bg-[#080B12] border-[#252D3A] hover:border-[#2B85FF]/40"
+                  }`}
+                >
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      {badge && (
+                        <span
+                          className={`inline-block px-3 py-1 rounded-md text-[11px] font-mono uppercase tracking-[0.14em] ${
+                            isHighlighted
+                              ? "bg-[#1677FF]/20 border border-[#1677FF]/40 text-[#5CA8FF]"
+                              : "bg-[#0D121D] border border-[#252D3A] text-[#AFC4E8]"
+                          }`}
+                        >
+                          {badge}
                         </span>
-                        <span className="text-xs font-mono text-foreground-muted">COP</span>
+                      )}
+
+                      <h3 className="font-display text-2xl font-bold text-white tracking-tight">
+                        {title}
+                      </h3>
+
+                      <p className="text-sm text-[#9AA5B8] font-light leading-relaxed">
+                        {description}
+                      </p>
+                    </div>
+
+                    <div className="py-4 border-y border-[#252D3A] space-y-1.5">
+                      <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight">
+                        {priceNote}
                       </div>
-                    ) : (
-                      <div className="text-2xl font-bold text-white font-mono">
-                        {language === "en" ? "Custom Quote" : "A Cotizar"}
+                      <div className="text-xs font-mono text-[#5CA8FF]">
+                        {language === "en" ? "Reference window:" : "Ventana estimada:"} {deliveryTime}
                       </div>
-                    )}
-                    <p className="text-xs text-foreground-muted/80">{priceNote}</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <span className="text-xs font-mono uppercase tracking-wider text-white block">
+                        {t.pricing.deliverablesLabel}
+                      </span>
+                      <ul className="space-y-2.5 text-xs sm:text-sm text-[#9AA5B8] font-light">
+                        {deliverables.map((item, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5">
+                            <Check className="w-4 h-4 text-[#2B85FF] shrink-0 mt-0.5" aria-hidden="true" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
 
-                  {/* Deliverables */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-mono uppercase tracking-wider text-white">
-                      {t.pricing.deliverablesLabel}
-                    </h4>
-                    <ul className="space-y-2 text-xs md:text-sm text-foreground/85 font-light">
-                      {deliverables.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5">
-                          <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="pt-8">
+                    <Link
+                      href="#contacto"
+                      onClick={() => triggerContactServiceSelection(tier.id)}
+                      className={`w-full py-3.5 px-5 rounded-xl font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF] ${
+                        isHighlighted
+                          ? "bg-[#1677FF] hover:bg-[#2B85FF] text-white shadow-lg shadow-[#1677FF]/25"
+                          : "bg-[#0D121D] hover:bg-[#141B2B] text-white border border-[#252D3A] hover:border-[#2B85FF]/50"
+                      }`}
+                    >
+                      <span>{ctaText}</span>
+                      <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                    </Link>
                   </div>
                 </div>
-
-                {/* Action Button */}
-                <div className="pt-8">
-                  <Link
-                    href="#contacto"
-                    className={`w-full py-3.5 px-6 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                      tier.category === "alcance-variable"
-                        ? "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-lg shadow-blue-600/30"
-                        : "bg-white/10 hover:bg-white/20 text-white"
-                    }`}
-                  >
-                    <span>{ctaText}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
+              </MotionItem>
             );
           })}
-        </div>
+        </MotionStagger>
 
-        {/* Scope Factors Explanation Box */}
-        <div className="mt-16 p-8 rounded-2xl bg-surface/50 border border-white/10 space-y-6">
-          <div className="flex items-center gap-3">
-            <Info className="w-5 h-5 text-[var(--color-accent-cyan)] shrink-0" />
-            <h3 className="text-lg font-bold text-white tracking-tight">
-              {t.pricing.scopeFactorsTitle}
-            </h3>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-xs md:text-sm">
+        {/* Factores de alcance en proyectos personalizados */}
+        <MotionReveal delay={0.1} className="mt-14 pt-12 border-t border-[#252D3A]">
+          <h3 className="font-display text-lg font-bold text-white mb-6 tracking-tight">
+            {t.pricing.scopeFactorsTitle}
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {t.pricing.scopeFactors.map((factor, idx) => (
-              <div key={idx} className="space-y-2 p-4 rounded-xl bg-background/50 border border-white/5">
-                <h4 className="font-semibold text-white">{factor.title}</h4>
-                <p className="text-foreground-muted font-light leading-relaxed">
+              <div
+                key={idx}
+                className="p-5 rounded-xl bg-[#080B12] border border-[#252D3A] space-y-2"
+              >
+                <span className="text-[11px] font-mono text-[#2B85FF] uppercase tracking-[0.14em]">
+                  0{idx + 1}
+                </span>
+                <h4 className="font-semibold text-white text-sm">{factor.title}</h4>
+                <p className="text-xs text-[#9AA5B8] font-light leading-relaxed">
                   {factor.description}
                 </p>
               </div>
             ))}
           </div>
+        </MotionReveal>
 
-          <p className="text-xs text-foreground-muted/70 italic border-t border-white/5 pt-4">
-            * {t.pricing.disclaimer}{" "}
-            <Link href="/legal/contratacion" className="text-[var(--color-accent-cyan)] underline">
-              {t.pricing.contractConditionsLink}
-            </Link>.
-          </p>
-        </div>
-      </div>
+        {/* Disclaimer comercial transparente */}
+        <MotionReveal delay={0.12} className="mt-8">
+          <div className="p-5 rounded-xl bg-[#080B12] border border-[#252D3A] flex items-start gap-3 text-xs text-[#9AA5B8] font-light leading-relaxed">
+            <Info className="w-4 h-4 text-[#2B85FF] shrink-0 mt-0.5" aria-hidden="true" />
+            <p>
+              <strong>{language === "en" ? "Pricing note" : "Nota comercial"}:</strong> {t.pricing.disclaimer}{" "}
+              <Link href="/legal/contratacion" className="text-[#5CA8FF] underline font-normal">
+                {t.pricing.contractConditionsLink}
+              </Link>
+              .
+            </p>
+          </div>
+        </MotionReveal>
+      </Container>
     </section>
   );
 }

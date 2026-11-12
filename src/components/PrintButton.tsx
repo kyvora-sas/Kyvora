@@ -4,11 +4,13 @@ import { Printer } from "lucide-react";
 
 interface PrintButtonProps {
   label?: string;
+  ariaLabel?: string;
   className?: string;
 }
 
 export default function PrintButton({
   label = "Imprimir / Guardar PDF",
+  ariaLabel = "Imprimir este documento legal o guardarlo en PDF",
   className = "",
 }: PrintButtonProps) {
   const handlePrint = () => {
@@ -21,10 +23,10 @@ export default function PrintButton({
     <button
       type="button"
       onClick={handlePrint}
-      aria-label="Imprimir este documento legal o guardarlo en PDF"
-      className={`no-print inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-foreground-muted hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-cyan)] cursor-pointer ${className}`}
+      aria-label={ariaLabel}
+      className={`no-print inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#252D3A] bg-[#0D121D] hover:bg-[#141B2B] text-xs font-mono text-[#AFC4E8] hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF] cursor-pointer ${className}`}
     >
-      <Printer className="w-3.5 h-3.5 text-[var(--color-accent-cyan)]" />
+      <Printer className="w-3.5 h-3.5 text-[#2B85FF]" aria-hidden="true" />
       <span>{label}</span>
     </button>
   );

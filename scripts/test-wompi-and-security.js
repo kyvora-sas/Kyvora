@@ -2458,6 +2458,161 @@ async function testSecurityAuditRemediation() {
   }
 }
 
+// 15. FASE 3: Endurecimiento de /api/contact, Datos Oficiales, Lab y /recursos
+function testFase3ContactBrandAndEditorialIntegrity() {
+  console.log(`\n${CYAN}--- 15. FASE 3: Contacto, Marca, Lab y /recursos ---${RESET}`);
+
+  const contactRoutePath = path.join(process.cwd(), "src", "app", "api", "contact", "route.ts");
+  const contactRouteSrc = fs.readFileSync(contactRoutePath, "utf8");
+  const contactUtilsPath = path.join(process.cwd(), "src", "lib", "contact-utils.ts");
+  const contactUtilsSrc = fs.readFileSync(contactUtilsPath, "utf8");
+
+  assert(
+    contactRouteSrc.includes("checkRateLimit") && contactRouteSrc.includes("getClientIp"),
+    "[F3-01] /api/contact reutiliza rate limiter distribuido (checkRateLimit) y extracción confiable de IP (getClientIp)"
+  );
+  assert(
+    contactRouteSrc.includes("safeEmailHtml") && contactRouteSrc.includes('mailto:${safeEmailHtml}'),
+    "[F3-02] /api/contact escapa el correo electrónico antes de interpolarlo en HTML/mailto"
+  );
+  assert(
+    contactRouteSrc.includes("sanitizeAndValidateEmail") && contactUtilsSrc.includes('cleanEmail.includes("..")'),
+    "[F3-03] /api/contact aplica validación estricta contra CRLF, comillas y secuencias inseguras en emails"
+  );
+
+  // Validación funcional equivalente del filtro estrictamente seguro de correo
+  const emailRegex = /^[a-z0-9.!#$%&*+/=?^_{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+  const checkSafeEmail = (raw) => {
+    const clean = String(raw ?? "").trim().toLowerCase().slice(0, 120);
+    if (!clean || /[\s\r\n<>'"`\\]/.test(clean) || clean.includes("..")) return null;
+    return emailRegex.test(clean) ? clean : null;
+  };
+  assert(
+    checkSafeEmail("ana.garcia+dev@empresa.co") === "ana.garcia+dev@empresa.co" &&
+      checkSafeEmail('evil"onclick=x@a.co') === null &&
+      checkSafeEmail("crlf@a.co\r\nBcc:x@y.co") === null,
+    "[F3-04] Validación estricta acepta correos legítimos y rechaza payloads con comillas o CRLF"
+  );
+
+  const siteCfg = fs.readFileSync(path.join(process.cwd(), "src", "config", "site.ts"), "utf8");
+  const legalCfg = fs.readFileSync(path.join(process.cwd(), "src", "config", "legal.ts"), "utf8");
+  assert(
+    siteCfg.includes("+57 315 201 1203") &&
+      legalCfg.includes("+57 315 201 1203") &&
+      !siteCfg.includes("318 324") &&
+      !legalCfg.includes("318 324") &&
+      !siteCfg.includes("315201203") &&
+      !siteCfg.includes("kyvora-sas"),
+    "[F3-05] Configuraciones oficiales conservan exclusivamente +57 315 201 1203 y https://github.com/Kyvora-org"
+  );
+
+  const projectsCfg = fs.readFileSync(path.join(process.cwd(), "src", "config", "projects.ts"), "utf8");
+  assert(
+    projectsCfg.includes("FFmpeg 7") &&
+      projectsCfg.includes("Tauri 2") &&
+      projectsCfg.includes("gemma4:e2b") &&
+      projectsCfg.includes("Ollama") &&
+      !projectsCfg.includes("LangChain") &&
+      !projectsCfg.includes("Vector DB"),
+    "[F3-06] Fichas técnicas de Kyvora Studio y PulsAI coinciden con sus implementaciones verificadas"
+  );
+
+  const articlesSrc = fs.readFileSync(path.join(process.cwd(), "src", "content", "recursos", "articles.ts"), "utf8");
+  const esSlugs = [...articlesSrc.matchAll(/es:\s*\{[\s\S]*?slug:\s*"([^"]+)"/g)].map((m) => m[1]);
+  const enSlugs = [...articlesSrc.matchAll(/en:\s*\{[\s\S]*?slug:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert(
+    esSlugs.length >= 3 &&
+      enSlugs.length === esSlugs.length &&
+      new Set(esSlugs).size === esSlugs.length &&
+      new Set(enSlugs).size === enSlugs.length,
+    `[F3-07] Hub /recursos publica ${esSlugs.length} guías bilingües con slugs únicos en ES y EN`
+  );
+}
+
+function testFase456VisualMotionSeoSecurityIntegrity() {
+  console.log(`\n${CYAN}--- 16. FASE 4, 5 & 6: Identidad Visual, Motion, SEO Técnico y Seguridad (CSP / Redirects) ---${RESET}`);
+
+  const nextCfg = fs.readFileSync(path.join(process.cwd(), "next.config.ts"), "utf8");
+  assert(
+    nextCfg.includes("Content-Security-Policy") &&
+      nextCfg.includes("object-src 'none'") &&
+      nextCfg.includes("frame-ancestors 'self'") &&
+      nextCfg.includes("https://checkout.wompi.co") &&
+      nextCfg.includes('isDev ? " \'unsafe-eval\'" : ""') &&
+      nextCfg.includes("VERCEL_ENV === \"production\""),
+    "[F46-01] next.config.ts aplica CSP restrictivo sin unsafe-eval en producción, compatible con Wompi y HTTP local"
+  );
+
+  assert(
+    nextCfg.includes("redirects()") &&
+      nextCfg.includes('value: "kyvora.net.co"') &&
+      nextCfg.includes("https://www.kyvora.net.co/:path*") &&
+      nextCfg.includes("permanent: true"),
+    "[F46-02] next.config.ts configura redirección permanente 308 de apex kyvora.net.co hacia https://www.kyvora.net.co"
+  );
+
+  const legalSlugs = [
+    "contratacion",
+    "cookies",
+    "datos-personales",
+    "donate",
+    "pagos-reversiones",
+    "pqrs",
+    "privacidad",
+    "terminos",
+  ];
+  const allLegalServerCanonical = legalSlugs.every((slug) => {
+    const fileSrc = fs.readFileSync(path.join(process.cwd(), "src", "app", "legal", slug, "page.tsx"), "utf8");
+    return (
+      !fileSrc.includes('"use client"') &&
+      fileSrc.includes("export const metadata") &&
+      fileSrc.includes(`canonical: "/legal/${slug}"`)
+    );
+  });
+  assert(
+    allLegalServerCanonical &&
+      fs.existsSync(path.join(process.cwd(), "src", "components", "legal", "PqrsContent.tsx")),
+    "[F46-03] Las 8 rutas legales son Server Components con metadata explícita y canonical propio (incluyendo /legal/pqrs)"
+  );
+
+  const layoutSrc = fs.readFileSync(path.join(process.cwd(), "src", "app", "layout.tsx"), "utf8");
+  assert(
+    fs.existsSync(path.join(process.cwd(), "src", "app", "opengraph-image.tsx")) &&
+      fs.existsSync(path.join(process.cwd(), "src", "app", "twitter-image.tsx")) &&
+      !layoutSrc.includes("/img/logo.png") &&
+      layoutSrc.includes("/icon.svg") &&
+      layoutSrc.includes('"@type": "WebSite"') &&
+      layoutSrc.includes("Valle del Cauca") &&
+      layoutSrc.includes('.replace(/</g, "\\\\u003c")'),
+    "[F46-04] OpenGraph/Twitter image activos vía next/og y JSON-LD sano sin rutas rotas ni direcciones inventadas"
+  );
+
+  const langCtx = fs.readFileSync(path.join(process.cwd(), "src", "context", "LanguageContext.tsx"), "utf8");
+  const motionPrims = fs.readFileSync(path.join(process.cwd(), "src", "components", "motion", "MotionPrimitives.tsx"), "utf8");
+  const homePage = fs.readFileSync(path.join(process.cwd(), "src", "app", "page.tsx"), "utf8");
+  assert(
+    langCtx.includes('<MotionConfig reducedMotion="user">') &&
+      motionPrims.includes("useReducedMotion") &&
+      homePage.includes("ManifestoSection") &&
+      homePage.includes("HumanSection") &&
+      fs.existsSync(path.join(process.cwd(), "src", "components", "hero", "KyvoraHeroComposition.tsx")),
+    "[F46-05] MotionConfig reducedMotion='user', primitivos accesibles, Hero composition, Manifesto y Human en portada"
+  );
+
+  const translationsSrc = fs.readFileSync(path.join(process.cwd(), "src", "i18n", "translations.ts"), "utf8");
+  assert(
+    translationsSrc.includes("Tecnología con intención.") &&
+      translationsSrc.includes("Ideas que toman forma.") &&
+      translationsSrc.includes("Tecnología para ideas que todavía no existen.") &&
+      !translationsSrc.includes("Lighthouse (>90") &&
+      !translationsSrc.includes("(>90)") &&
+      !translationsSrc.includes("kyvora-sas") &&
+      !translationsSrc.includes("318 324") &&
+      !translationsSrc.includes("315201203"),
+    "[F46-06] Copy bilingüe limpio de promesas no verificables, fiel al Brand Book y libre de canales obsoletos"
+  );
+}
+
 // Ejecución
 async function runAll() {
   testIntegritySignature();
@@ -2474,6 +2629,8 @@ async function runAll() {
   await testMissionCritical12Requirements();
   testWompiReturnUrlPolicy();
   await testSecurityAuditRemediation();
+  testFase3ContactBrandAndEditorialIntegrity();
+  testFase456VisualMotionSeoSecurityIntegrity();
 
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`Resultados: ${GREEN}${passedCount} pasaron${RESET}, ${failedCount > 0 ? RED : GREEN}${failedCount} fallaron${RESET}`);

@@ -7,6 +7,7 @@ export interface Translations {
     lab: string;
     pricing: string;
     process: string;
+    resources: string;
     donate: string;
     contact: string;
     startProject: string;
@@ -17,11 +18,16 @@ export interface Translations {
   hero: {
     badgeStudio: string;
     badgeCountry: string;
+    primaryClaim: string;
     titlePart1: string;
     titleGradient: string;
     description: string;
     ctaPrimary: string;
     ctaSecondary: string;
+    studioLabel: string;
+    studioSummary: string;
+    labLabel: string;
+    labSummary: string;
     specs: {
       stackTitle: string;
       stackValue: string;
@@ -33,10 +39,19 @@ export interface Translations {
       complianceValue: string;
     };
   };
+  manifesto: {
+    badge: string;
+    statement: string;
+    subClaim: string;
+    supporting: string;
+    pillars: Array<{ label: string; value: string }>;
+  };
   services: {
     badge: string;
+    divisionTag: string;
     title: string;
     subtitle: string;
+    focusAreas: string[];
     whatWeBuildLabel: string;
     needSolvedLabel: string;
     includedLabel: string;
@@ -57,6 +72,8 @@ export interface Translations {
   };
   lab: {
     badge: string;
+    visionClaim: string;
+    featuredLabel: string;
     title: string;
     subtitle: string;
     repoBtn: string;
@@ -64,6 +81,8 @@ export interface Translations {
     purposeLabel: string;
     contributionText: string;
     contributionBtn: string;
+    resourcesPrompt: string;
+    resourcesBtn: string;
     projects: Record<
       string,
       {
@@ -107,6 +126,19 @@ export interface Translations {
       title: string;
       desc: string;
     }>;
+  };
+  human: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    pillars: Array<{
+      num: string;
+      title: string;
+      desc: string;
+    }>;
+    closingNote: string;
+    resourcesCta: string;
+    contactCta: string;
   };
   donate: {
     badge: string;
@@ -188,6 +220,7 @@ export const translations: Record<Language, Translations> = {
       lab: "Laboratorio",
       pricing: "Precios",
       process: "Proceso",
+      resources: "Recursos",
       donate: "Donate Us",
       contact: "Contacto",
       startProject: "Iniciar Proyecto",
@@ -196,14 +229,19 @@ export const translations: Record<Language, Translations> = {
       operatingFrom: "Operando desde Colombia",
     },
     hero: {
-      badgeStudio: "Estudio de Software Independiente",
+      badgeStudio: "KYVORA · Studio & Lab",
       badgeCountry: "Colombia",
+      primaryClaim: "Tecnología con intención.",
       titlePart1: "Convertimos ideas complejas en ",
       titleGradient: "software real",
       description:
-        "Desarrollamos soluciones web de alto impacto, aplicaciones interactivas, sistemas de datos a medida y automatizaciones con inteligencia artificial. Sin plantillas genéricas. Con ingeniería sólida y lista para producción.",
+        "Desarrollamos páginas web, aplicaciones interactivas, sistemas a la medida, automatizaciones e integración con inteligencia artificial. Sin plantillas genéricas. Con criterio técnico y arquitectura pensada para durar.",
       ctaPrimary: "Iniciar un Proyecto",
-      ctaSecondary: "Explorar Laboratorio",
+      ctaSecondary: "Explorar KYVORA Lab",
+      studioLabel: "KYVORA STUDIO",
+      studioSummary: "Desarrollo web, apps, sistemas personalizados, automatización e IA.",
+      labLabel: "KYVORA LAB",
+      labSummary: "Investigación, prototipos propios y productos experimentales.",
       specs: {
         stackTitle: "Stack Core",
         stackValue: "Next.js · React 19 · TS",
@@ -215,11 +253,34 @@ export const translations: Record<Language, Translations> = {
         complianceValue: "Ley 1480 · Ley 1581 (Col)",
       },
     },
+    manifesto: {
+      badge: "Manifiesto KYVORA",
+      statement:
+        "La tecnología no debería existir por existir. Debería resolver problemas, abrir posibilidades y convertir ideas en algo real.",
+      subClaim: "Ideas que toman forma.",
+      supporting:
+        "Combinamos diseño con criterio, ingeniería modular e investigación propia para construir plataformas claras, confiables y pensadas para crecer con el negocio.",
+      pillars: [
+        { label: "01 · KYVORA Studio", value: "Software y sistemas a medida" },
+        { label: "02 · KYVORA Lab", value: "Prototipos e I+D propio" },
+        { label: "03 · Ingeniería", value: "Arquitectura modular y limpia" },
+      ],
+    },
     services: {
-      badge: "Capacidades de Ingeniería",
-      title: "Servicios Comerciales",
+      badge: "KYVORA STUDIO · Servicios",
+      divisionTag: "División Comercial",
+      title: "Desarrollo, Sistemas e Inteligencia Artificial",
       subtitle:
-        "Soluciones estructuradas con alcance transparente. Especificamos con claridad qué construimos, qué incluye el entregable y qué dependencias existen.",
+        "Soluciones estructuradas con alcance transparente: especificamos qué construimos, qué incluye cada entregable y qué dependencias técnicas aplican.",
+      focusAreas: [
+        "Desarrollo web",
+        "Landing pages",
+        "Aplicaciones web y móviles",
+        "Sistemas personalizados",
+        "Inventarios y gestión administrativa",
+        "Automatización de procesos",
+        "Integración de IA",
+      ],
       whatWeBuildLabel: "Qué se desarrolla",
       needSolvedLabel: "Necesidad que resuelve",
       includedLabel: "Qué incluye el entregable",
@@ -231,7 +292,7 @@ export const translations: Record<Language, Translations> = {
           id: "web-development",
           num: "01",
           title: "Desarrollo Web & Landing Pages",
-          shortDesc: "Diseño y desarrollo de sitios web modernos, veloces y de alta conversión.",
+          shortDesc: "Sitios web institucionales y landing pages orientadas a claridad y conversión.",
           whatWeBuild:
             "Sitios web institucionales, páginas de aterrizaje (landing pages) para campañas comerciales, portafolios interactivos y portales de contenido estructurado desarrollados sobre arquitecturas modernas como Next.js y React.",
           needSolved:
@@ -240,7 +301,7 @@ export const translations: Record<Language, Translations> = {
             "Diseño UI/UX adaptado a la identidad de marca (Desktop y Móvil)",
             "Código semántico, accesible y optimizado para motores de búsqueda (SEO)",
             "Formularios funcionales con protección anti-spam y entrega por correo",
-            "Puntuación alta en Google Lighthouse (>90 en métricas clave)",
+            "Optimización técnica de rendimiento, carga y Core Web Vitals",
             "Metadatos Open Graph para previsualización en WhatsApp y redes sociales",
           ],
           limitationsAndDependencies: [
@@ -322,16 +383,20 @@ export const translations: Record<Language, Translations> = {
       ],
     },
     lab: {
-      badge: "I+D · Prototipos & Proyectos Verificados",
-      title: "Laboratorio de Proyectos",
+      badge: "KYVORA LAB · I+D y Experimentación",
+      visionClaim: "Tecnología para ideas que todavía no existen.",
+      featuredLabel: "Proyecto Destacado del Laboratorio",
+      title: "Laboratorio de Productos Propios",
       subtitle:
-        "Iniciativas de software concebidas y probadas internamente por KYVORA. Mostramos únicamente datos respaldados por código y desarrollo real.",
+        "Iniciativas de investigación, experimentación y software concebidas internamente por KYVORA. Mostramos únicamente desarrollos reales respaldados por código.",
       repoBtn: "Repositorio",
       internalPrototype: "Prototipo Interno",
       purposeLabel: "Propósito técnico:",
       contributionText:
         "¿Quieres apoyar el desarrollo de sensores en QuakeNet o la infraestructura de Pulso?",
       contributionBtn: "Aportar a un Proyecto en Donate Us",
+      resourcesPrompt: "¿Buscas criterio técnico o guías prácticas?",
+      resourcesBtn: "Explorar Guías en /recursos",
       projects: {
         pulso: {
           tagline: "Red social experimental orientada a interacción en tiempo real.",
@@ -346,15 +411,15 @@ export const translations: Record<Language, Translations> = {
           status: "Experimental",
         },
         "kyvora-studio": {
-          tagline: "Entorno interno de componentes y arquitectura para despliegue veloz.",
+          tagline: "Editor de video no lineal (NLE) multipista para escritorio y web.",
           purpose:
-            "Biblioteca de patrones de diseño, utilidades de seguridad y módulos base reutilizables que aceleran el ciclo de vida de los productos desarrollados por KYVORA.",
+            "Suite de edición y postproducción de video en desarrollo con arquitectura monorepo y streaming nativo en Windows. Incluye línea de tiempo multipista (video, audio y texto), proyectos .XTP, monitor 1080p a 60 fps, corte, duplicación y renderizado multi-códec con FFmpeg 7.",
           status: "En Desarrollo",
         },
         pulsai: {
-          tagline: "Módulo de inteligencia y automatización contextual para flujos de trabajo.",
+          tagline: "Asistente analítico conectado a modelos locales con búsqueda web, documentos y voz.",
           purpose:
-            "Prototipo de asistentes de IA orientados a procesar tareas repetitivas, clasificación de mensajes y automatización de procesos internos para pequeñas operaciones.",
+            "Prototipo experimental de PulsAI Analytics conectado al modelo local gemma4:e2b mediante Ollama, con herramientas integradas de búsqueda web, lectura de documentos, entrada de imagen y soporte de voz.",
           status: "Experimental",
         },
         voicetranslate: {
@@ -388,7 +453,7 @@ export const translations: Record<Language, Translations> = {
             "Estructura visual responsive (móvil, tablet, desktop)",
             "Hasta 5 secciones de contenido estructurado",
             "Formulario de contacto con validación y reenvío por correo",
-            "Optimización de rendimiento Lighthouse (>90)",
+            "Optimización técnica de velocidad de carga y SEO base",
             "Metadatos SEO y tarjetas Open Graph para redes sociales",
             "Integración con WhatsApp y analítica básica",
           ],
@@ -469,43 +534,70 @@ export const translations: Record<Language, Translations> = {
       ],
     },
     process: {
-      badge: "Metodología de Trabajo",
-      title: "Proceso de Entrega",
+      badge: "Metodología KYVORA",
+      title: "Proceso Progresivo en 5 Etapas",
       subtitle:
-        "Un flujo claro desde el primer contacto hasta el soporte en producción. Cada proyecto cuenta con acuerdos específicos de plazos y entregables.",
-      phasePrefix: "Fase",
+        "Un flujo ordenado de principio a fin, con comunicación directa y validaciones tangibles antes de cada paso siguiente.",
+      phasePrefix: "Etapa",
       steps: [
         {
           num: "01",
-          title: "Descubrimiento",
-          desc: "Analizamos tu objetivo comercial o técnico, identificamos los cuellos de botella y evaluamos la viabilidad real de la solución.",
+          title: "Exploración",
+          desc: "Comprendemos el problema operativo o comercial, las restricciones técnicas reales y el contexto antes de diseñar una línea de código.",
         },
         {
           num: "02",
-          title: "Definición del Alcance",
-          desc: "Redactamos una especificación clara: pantallas, flujos de usuario, integraciones de terceros y arquitectura de software requerida.",
+          title: "Diseño",
+          desc: "Definimos arquitectura de software, modelo de datos, flujos clave e identidad visual con foco en claridad y propósito.",
         },
         {
           num: "03",
-          title: "Cotización y Acuerdo",
-          desc: "Presentamos una propuesta transparente con costos, plazos por hitos y condiciones contractuales formales aceptadas por ambas partes.",
+          title: "Desarrollo",
+          desc: "Implementamos con código tipado, limpio y modular, habilitando revisiones verificables durante el avance.",
         },
         {
           num: "04",
-          title: "Diseño & Desarrollo",
-          desc: "Implementamos la solución mediante código limpio, diseño responsive y revisiones periódicas para verificar avances de forma tangible.",
+          title: "Validación",
+          desc: "Ejecutamos pruebas de seguridad, accesibilidad, rendimiento y respuesta en dispositivos reales antes de publicar.",
         },
         {
           num: "05",
-          title: "Pruebas & Entrega",
-          desc: "Ejecutamos pruebas de rendimiento, seguridad y responsividad en múltiples dispositivos antes del despliegue final en producción.",
-        },
-        {
-          num: "06",
-          title: "Soporte & Garantía",
-          desc: "Acompañamos el lanzamiento con garantía técnica sobre el código entregado y opciones de mantenimiento continuo según lo pactado.",
+          title: "Evolución",
+          desc: "Desplegamos de forma controlada y entregamos una base documentada y mantenible preparada para iterar con criterio.",
         },
       ],
+    },
+    human: {
+      badge: "Criterio & Enfoque Humano",
+      title: "Un estudio tecnológico independiente construido con cercanía y criterio",
+      subtitle:
+        "Creemos en colaboraciones técnicas transparentes: comunicación directa con quien diseña y programa, alcance realista y tecnología construida para servir a personas reales.",
+      pillars: [
+        {
+          num: "01",
+          title: "Cercanía real",
+          desc: "Conversas directamente con el equipo técnico que piensa la arquitectura y escribe el código de tu proyecto.",
+        },
+        {
+          num: "02",
+          title: "Comunicación directa",
+          desc: "Alineamos objetivos, dependencias y avances concretos sin intermediarios comerciales ni jerga artificial.",
+        },
+        {
+          num: "03",
+          title: "Desarrollo con criterio",
+          desc: "Elegimos herramientas probadas y estructuras mantenibles por encima de modas pasajeras o plantillas pesadas.",
+        },
+        {
+          num: "04",
+          title: "A medida de necesidades reales",
+          desc: "Desde presencia web clara hasta inventarios, gestión administrativa, automatización operativa e integración de IA.",
+        },
+      ],
+      closingNote:
+        "Operando de forma independiente desde el Valle del Cauca, Colombia — abiertos a conversar sobre tu proyecto o compartir guías prácticas.",
+      resourcesCta: "Explorar Guías en /recursos",
+      contactCta: "Conversar sobre un proyecto",
     },
     donate: {
       badge: "Mecenazgo & Aportes Voluntarios",
@@ -629,6 +721,7 @@ export const translations: Record<Language, Translations> = {
       lab: "Laboratory",
       pricing: "Pricing",
       process: "Process",
+      resources: "Resources",
       donate: "Donate Us",
       contact: "Contact",
       startProject: "Start Project",
@@ -637,14 +730,19 @@ export const translations: Record<Language, Translations> = {
       operatingFrom: "Operating from Colombia",
     },
     hero: {
-      badgeStudio: "Independent Software Studio",
+      badgeStudio: "KYVORA · Studio & Lab",
       badgeCountry: "Colombia",
+      primaryClaim: "Technology with intent.",
       titlePart1: "We turn complex ideas into ",
       titleGradient: "real software",
       description:
-        "We build high-impact web solutions, interactive applications, custom data systems, and artificial intelligence automation. No generic templates. Solid, production-ready engineering.",
+        "We design and build websites, interactive applications, custom systems, operational automation, and AI integrations. No generic templates. Intentional engineering built to last.",
       ctaPrimary: "Start a Project",
-      ctaSecondary: "Explore Laboratory",
+      ctaSecondary: "Explore KYVORA Lab",
+      studioLabel: "KYVORA STUDIO",
+      studioSummary: "Websites, apps, custom software systems, automation & AI.",
+      labLabel: "KYVORA LAB",
+      labSummary: "Internal research, original prototypes & experimental products.",
       specs: {
         stackTitle: "Core Stack",
         stackValue: "Next.js · React 19 · TS",
@@ -656,11 +754,34 @@ export const translations: Record<Language, Translations> = {
         complianceValue: "Commercial & Privacy (Col)",
       },
     },
+    manifesto: {
+      badge: "KYVORA Manifesto",
+      statement:
+        "Technology should not exist merely for its own sake. It should solve problems, unlock possibilities, and turn ideas into something real.",
+      subClaim: "Ideas that take shape.",
+      supporting:
+        "We unite thoughtful design, modular software engineering, and in-house experimentation to build clear, dependable platforms designed to grow with your business.",
+      pillars: [
+        { label: "01 · KYVORA Studio", value: "Custom software & systems" },
+        { label: "02 · KYVORA Lab", value: "Internal R&D & prototypes" },
+        { label: "03 · Engineering", value: "Clean, modular architecture" },
+      ],
+    },
     services: {
-      badge: "Engineering Capabilities",
-      title: "Commercial Services",
+      badge: "KYVORA STUDIO · Services",
+      divisionTag: "Commercial Division",
+      title: "Development, Custom Systems & AI",
       subtitle:
-        "Structured solutions with transparent scope. We clearly define what we build, what the deliverable includes, and all technical dependencies.",
+        "Structured solutions with transparent scope: we define what we build, what each deliverable covers, and every technical dependency upfront.",
+      focusAreas: [
+        "Web development",
+        "Landing pages",
+        "Web & mobile applications",
+        "Custom software systems",
+        "Inventory & administrative operations",
+        "Process automation",
+        "AI integration",
+      ],
       whatWeBuildLabel: "What we build",
       needSolvedLabel: "Problem it solves",
       includedLabel: "Included in deliverable",
@@ -672,7 +793,7 @@ export const translations: Record<Language, Translations> = {
           id: "web-development",
           num: "01",
           title: "Web Development & Landing Pages",
-          shortDesc: "Design and development of modern, high-speed, high-converting websites.",
+          shortDesc: "Institutional websites and landing pages designed for clarity and conversion.",
           whatWeBuild:
             "Corporate websites, commercial campaign landing pages, interactive portfolios, and structured content portals built on modern architectures like Next.js and React.",
           needSolved:
@@ -681,7 +802,7 @@ export const translations: Record<Language, Translations> = {
             "UI/UX design tailored to your brand identity (Desktop & Mobile)",
             "Semantic, accessible code optimized for search engines (SEO)",
             "Functional forms with anti-spam protection and email delivery",
-            "High Google Lighthouse score (>90 in core web vitals)",
+            "Technical optimization for performance, fast loading, and Core Web Vitals",
             "Open Graph metadata for rich previews on WhatsApp and social media",
           ],
           limitationsAndDependencies: [
@@ -763,16 +884,20 @@ export const translations: Record<Language, Translations> = {
       ],
     },
     lab: {
-      badge: "R&D · Verified Prototypes & Projects",
-      title: "Project Laboratory",
+      badge: "KYVORA LAB · R&D & Experimentation",
+      visionClaim: "Technology for ideas that do not exist yet.",
+      featuredLabel: "Featured Laboratory Initiative",
+      title: "In-House Product Laboratory",
       subtitle:
-        "Software initiatives conceived and tested internally at KYVORA. We only showcase real, code-backed development.",
+        "Research, experimentation, and original software initiatives conceived inside KYVORA. We only showcase real, code-backed engineering.",
       repoBtn: "Repository",
       internalPrototype: "Internal Prototype",
       purposeLabel: "Technical Purpose:",
       contributionText:
         "Want to support sensor development in QuakeNet or Pulso's infrastructure?",
       contributionBtn: "Contribute to a Project in Donate Us",
+      resourcesPrompt: "Looking for practical engineering guides?",
+      resourcesBtn: "Explore Guides in /recursos",
       projects: {
         pulso: {
           tagline: "Experimental social network focused on real-time interaction.",
@@ -787,15 +912,15 @@ export const translations: Record<Language, Translations> = {
           status: "Experimental",
         },
         "kyvora-studio": {
-          tagline: "Internal component environment and architecture for rapid deployment.",
+          tagline: "Multi-track non-linear video editor (NLE) for desktop and web.",
           purpose:
-            "A library of design patterns, security utilities, and reusable base modules that accelerate the lifecycle of software built by KYVORA.",
+            "Video editing and post-production suite in development on a monorepo architecture with native Windows streaming. Includes multi-track timeline (video, audio, and text), .XTP projects, 1080p 60fps monitor, clip splitting, duplication, and multi-codec rendering with FFmpeg 7.",
           status: "In Development",
         },
         pulsai: {
-          tagline: "Contextual intelligence and automation module for internal workflows.",
+          tagline: "Analytical assistant connected to local models with web search, documents, and voice.",
           purpose:
-            "AI assistant prototype designed to handle repetitive tasks, message classification, and internal process automation for small teams.",
+            "Experimental prototype of PulsAI Analytics connected to the local gemma4:e2b model via Ollama, with integrated web search, document reading, image input, and voice support.",
           status: "Experimental",
         },
         voicetranslate: {
@@ -829,7 +954,7 @@ export const translations: Record<Language, Translations> = {
             "Responsive layout across mobile, tablet, and desktop",
             "Up to 5 structured content sections",
             "Contact form with validation and email forwarding",
-            "Lighthouse performance optimization (>90)",
+            "Technical loading performance and foundational SEO optimization",
             "SEO metadata and Open Graph cards for social media",
             "WhatsApp button and basic analytics integration",
           ],
@@ -910,43 +1035,70 @@ export const translations: Record<Language, Translations> = {
       ],
     },
     process: {
-      badge: "Work Methodology",
-      title: "Delivery Process",
+      badge: "KYVORA Methodology",
+      title: "5-Stage Progressive Process",
       subtitle:
-        "A clear journey from initial contact to production support. Every project is backed by specific milestone timelines and deliverables.",
-      phasePrefix: "Phase",
+        "A clear, direct engineering workflow from exploration to evolution, built on tangible checkpoints before advancing.",
+      phasePrefix: "Stage",
       steps: [
         {
           num: "01",
-          title: "Discovery",
-          desc: "We analyze your commercial or technical goal, pinpoint operational bottlenecks, and evaluate true technical feasibility.",
+          title: "Exploration",
+          desc: "We understand your operational or commercial problem, technical constraints, and real context before writing a line of code.",
         },
         {
           num: "02",
-          title: "Scope Definition",
-          desc: "We draft a precise specification: screens, user flows, third-party integrations, and required software architecture.",
+          title: "Design",
+          desc: "We structure software architecture, data models, key user flows, and visual identity with clarity and intent.",
         },
         {
           num: "03",
-          title: "Quote & Agreement",
-          desc: "We present a transparent proposal with costs, milestone deadlines, and formal contractual terms agreed upon by both parties.",
+          title: "Development",
+          desc: "We build with clean, strongly typed, modular code while providing testable progress checkpoints.",
         },
         {
           num: "04",
-          title: "Design & Development",
-          desc: "We build the solution with clean code, responsive design, and regular check-ins to demonstrate tangible, testable progress.",
+          title: "Validation",
+          desc: "We run security, accessibility, performance, and multi-device responsiveness checks prior to release.",
         },
         {
           num: "05",
-          title: "Testing & Delivery",
-          desc: "We run thorough performance, security, and responsive cross-device tests before final production deployment.",
-        },
-        {
-          num: "06",
-          title: "Support & Warranty",
-          desc: "We support your launch with technical warranty over delivered code and ongoing maintenance options as agreed.",
+          title: "Evolution",
+          desc: "We deploy cleanly and hand over a documented, maintainable foundation ready to scale and iterate intentionally.",
         },
       ],
+    },
+    human: {
+      badge: "Human Approach",
+      title: "An independent technology studio built on clarity and direct collaboration",
+      subtitle:
+        "We believe in transparent engineering partnerships: direct dialogue with the people designing and building your product, honest scope boundaries, and technology built to serve real users.",
+      pillars: [
+        {
+          num: "01",
+          title: "Direct collaboration",
+          desc: "Work directly with the engineering mind designing the architecture and writing your production software.",
+        },
+        {
+          num: "02",
+          title: "Clear dialogue",
+          desc: "We align on goals, dependencies, and tangible milestones without sales layers or vague buzzwords.",
+        },
+        {
+          num: "03",
+          title: "Intentional engineering",
+          desc: "We favor proven stacks and maintainable patterns over bloated templates or fragile short-term hacks.",
+        },
+        {
+          num: "04",
+          title: "Built for real operations",
+          desc: "From crisp websites to custom inventory/management tools, process automation, and thoughtful AI integrations.",
+        },
+      ],
+      closingNote:
+        "Operating independently from Valle del Cauca, Colombia — always open to talking through your project or sharing practical guides.",
+      resourcesCta: "Explore Guides in /recursos",
+      contactCta: "Let's discuss your project",
     },
     donate: {
       badge: "Patronage & Voluntary Contributions",

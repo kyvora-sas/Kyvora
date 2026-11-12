@@ -1,0 +1,22 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kg1" x1="0" y1="0" x2="64" y2="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1677FF" />
+      <stop offset="100%" stop-color="#2B85FF" />
+    </linearGradient>
+    <linearGradient id="kg2" x1="12" y1="230" x2="256" y2="6" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1661FB" />
+      <stop offset="55%" stop-color="#1677FF" />
+      <stop offset="100%" stop-color="#3B93FF" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#080B12" />
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" stroke="#252D3A" stroke-width="1.5" />
+  <g transform="translate(12.800, 14.492) scale(0.147126)">
+    
+  <path d="M 39 7 Q 45 0 53 0 Q 59 0 59 6 L 59 93 Q 59 100 54 105 L 5 154 Q 0 159 0 152 L 0 52 Q 0 46 4 42 Z" fill="url(#kg1)" />
+  <path d="M 169 7 Q 176 0 185 0 L 257 0 Q 261 0 258 3 L 29 232 Q 23 238 15 238 L 6 238 Q 0 238 0 232 L 0 184 Q 0 176 6 170 Z" fill="url(#kg2)" />
+  <path d="M 147 134 Q 155 126 163 134 L 258 232 Q 261 237 256 238 L 185 238 Q 178 238 173 232 L 119 175 Q 113 168 120 161 Z" fill="url(#kg2)" />
+
+  </g>
+</svg>

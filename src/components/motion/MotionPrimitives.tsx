@@ -71,7 +71,7 @@ export function MotionReveal({
 
   return (
     <motion.div
-      initial="hidden"
+      initial={immediate ? false : "hidden"}
       {...(immediate
         ? { animate: "visible" }
         : { whileInView: "visible", viewport: SAFE_VIEWPORT })}
@@ -134,7 +134,7 @@ export function KineticHeadline({
 
   return (
     <Tag
-      initial="hidden"
+      initial={immediate ? false : "hidden"}
       {...(immediate
         ? { animate: "visible" }
         : { whileInView: "visible", viewport: SAFE_VIEWPORT })}

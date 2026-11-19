@@ -17,17 +17,35 @@ export default function Home() {
 
       <main id="contenido-principal" className="flex-1">
         <Hero />
-        <ManifestoSection />
-        <Services />
-        <PricingSection />
-        <LabProjects />
-        <ProcessSection />
-        <HumanSection />
-        <DonateSection />
-        <ContactSection />
+        <div className="content-auto">
+          <ManifestoSection />
+        </div>
+        <div className="content-auto">
+          <Services />
+        </div>
+        <div className="content-auto">
+          <PricingSection />
+        </div>
+        <div className="content-auto">
+          <LabProjects />
+        </div>
+        <div className="content-auto">
+          <ProcessSection />
+        </div>
+        <div className="content-auto">
+          <HumanSection />
+        </div>
+        <div className="content-auto">
+          <DonateSection />
+        </div>
+        <div className="content-auto">
+          <ContactSection />
+        </div>
       </main>
 
-      <Footer />
+      <div className="content-auto">
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -56,40 +56,48 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const isScrolled = window.scrollY > 20;
+      setScrolled((prev) => (prev !== isScrolled ? isScrolled : prev));
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Seguimiento pasivo de sección activa en la portada
+  // Seguimiento pasivo de sección activa en la portada (diferido para no competir con la hidratación inicial)
   useEffect(() => {
     if (!isHome || typeof IntersectionObserver === "undefined") {
       return;
     }
 
-    const elements = SECTION_HASHES.map((hash) => document.getElementById(hash.slice(1))).filter(
-      (el): el is HTMLElement => Boolean(el)
-    );
+    let observer: IntersectionObserver | null = null;
+    const timer = setTimeout(() => {
+      const elements = SECTION_HASHES.map((hash) => document.getElementById(hash.slice(1))).filter(
+        (el): el is HTMLElement => Boolean(el)
+      );
 
-    if (elements.length === 0) return;
+      if (elements.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
-        if (visible?.target.id) {
-          setActiveHash(`#${visible.target.id}`);
-        }
-      },
-      { rootMargin: "-25% 0px -55% 0px", threshold: [0.1, 0.3, 0.6] }
-    );
+          if (visible?.target.id) {
+            setActiveHash(`#${visible.target.id}`);
+          }
+        },
+        { rootMargin: "-25% 0px -55% 0px", threshold: [0.1, 0.3, 0.6] }
+      );
 
-    elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+      elements.forEach((el) => observer?.observe(el));
+    }, 600);
+
+    return () => {
+      clearTimeout(timer);
+      observer?.disconnect();
+    };
   }, [isHome]);
 
   // Lock body scroll and set initial focus inside dialog when open

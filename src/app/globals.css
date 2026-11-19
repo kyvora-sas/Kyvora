@@ -258,3 +258,9 @@ textarea:focus-visible {
     text-decoration: underline !important;
   }
 }
+
+/* Optimización estructural de renderizado bajo el pliegue */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1000px;
+}

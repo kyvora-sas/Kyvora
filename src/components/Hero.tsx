@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Container } from "@/components/ui";
 import { KineticHeadline, MotionReveal } from "@/components/motion/MotionPrimitives";
 import KyvoraHeroComposition from "@/components/hero/KyvoraHeroComposition";
+import OrganicHeroCanvas from "@/components/hero/OrganicHeroCanvas";
 
 export default function Hero() {
   const { t } = useLanguage();
@@ -15,44 +16,54 @@ export default function Hero() {
       icon: Terminal,
       title: t.hero.specs.stackTitle,
       value: t.hero.specs.stackValue,
+      status: "CORE",
     },
     {
       icon: Layers,
       title: t.hero.specs.systemsTitle,
       value: t.hero.specs.systemsValue,
+      status: "SYNC",
     },
     {
       icon: Cpu,
       title: t.hero.specs.infraTitle,
       value: t.hero.specs.infraValue,
+      status: "EDGE",
     },
     {
       icon: ShieldCheck,
       title: t.hero.specs.complianceTitle,
       value: t.hero.specs.complianceValue,
+      status: "AUDIT",
     },
   ];
 
   return (
     <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden bg-[#080B12]">
-      {/* Retícula tecnológica sutil y foco de luz controlado */}
+      {/* 1. Núcleo Orgánico: Canvas 2D nativo ("Tecnología que respira") */}
+      <OrganicHeroCanvas className="z-0" />
+
+      {/* 2. Retícula arquitectónica y foco atmosférico sutil */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 tech-grid-pattern opacity-45"
+        className="pointer-events-none absolute inset-0 tech-grid-pattern opacity-35 z-0"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-24 left-1/3 w-[520px] h-[420px] bg-[#1677FF]/12 rounded-full blur-[120px]"
+        className="pointer-events-none absolute -top-32 left-1/4 w-[620px] h-[480px] bg-[radial-gradient(circle,rgba(22,119,255,0.14)_0%,transparent_70%)] blur-[90px] z-0"
       />
 
       <Container className="relative z-10 space-y-14 lg:space-y-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-          {/* Columna izquierda: Identidad, propuesta de valor y acciones */}
+          {/* Columna izquierda: Identidad editorial, propuesta de valor y acciones */}
           <div className="lg:col-span-7 flex flex-col items-start">
-            {/* Eyebrow técnico + Claim oficial */}
+            {/* Eyebrow técnico con pulso orgánico viviente + Claim oficial */}
             <MotionReveal immediate className="mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0D121D] border border-[#252D3A] text-xs font-mono text-[#9AA5B8]">
-                <span className="w-2 h-2 rounded-full bg-[#2B85FF]" />
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0D121D]/90 backdrop-blur-md border border-[#252D3A] text-xs font-mono text-[#9AA5B8] shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2B85FF] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2B85FF]" />
+                </span>
                 <span className="text-white font-medium">{t.hero.badgeStudio}</span>
                 <span className="text-[#252D3A]">|</span>
                 <span className="text-[#AFC4E8]">{t.hero.badgeCountry}</span>
@@ -62,7 +73,7 @@ export default function Hero() {
               </span>
             </MotionReveal>
 
-            {/* Titular editorial limpio (LCP inmediato y legible en mobile & desktop) */}
+            {/* Titular editorial cinemático (LCP inmediato, accesible y renderizado en SSR) */}
             <KineticHeadline
               as="h1"
               immediate
@@ -75,13 +86,12 @@ export default function Hero() {
               <span className="text-[#1677FF]">.</span>
             </KineticHeadline>
 
-            <MotionReveal immediate delay={0.08} className="mt-6 max-w-2xl">
-              <p className="text-base sm:text-lg md:text-xl font-light text-[#AFC4E8]/90 leading-relaxed text-balance">
-                {t.hero.description}
-              </p>
-            </MotionReveal>
+            {/* Párrafo descriptivo: renderizado semántico SSR directo (LCP inmediato, sin retraso de hidratación) */}
+            <p className="mt-6 max-w-2xl text-base sm:text-lg md:text-xl font-light text-[#AFC4E8]/90 leading-relaxed text-balance">
+              {t.hero.description}
+            </p>
 
-            {/* CTAs orientados a acción directa sin ruido */}
+            {/* CTAs cinemáticos con respuesta táctil y resplandor controlado */}
             <MotionReveal
               immediate
               delay={0.14}
@@ -89,43 +99,50 @@ export default function Hero() {
             >
               <Link
                 href="#contacto"
-                className="px-7 py-4 bg-[#1677FF] hover:bg-[#2B85FF] text-white font-semibold text-sm uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-[#1677FF]/25 hover:shadow-[#1677FF]/40 flex items-center justify-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
+                className="relative px-7 py-4 bg-[#1677FF] hover:bg-[#2B85FF] text-white font-semibold text-sm uppercase tracking-wider rounded-xl transition-all duration-300 shadow-[0_0_24px_rgba(22,119,255,0.3)] hover:shadow-[0_0_36px_rgba(43,133,255,0.55)] hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
               >
                 <span>{t.hero.ctaPrimary}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
 
               <Link
                 href="#laboratorio"
-                className="px-7 py-4 bg-[#0D121D] hover:bg-[#141B2B] text-white font-mono text-sm uppercase tracking-wider rounded-xl transition-colors border border-[#252D3A] hover:border-[#2B85FF]/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
+                className="px-7 py-4 bg-[#0D121D]/80 hover:bg-[#141B2B] text-white font-mono text-sm uppercase tracking-wider rounded-xl transition-all duration-300 border border-[#252D3A] hover:border-[#5CA8FF]/60 hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-sm flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
               >
                 {t.hero.ctaSecondary}
               </Link>
             </MotionReveal>
           </div>
 
-          {/* Columna derecha: Composición modular KYVORA K + Studio/Lab */}
+          {/* Columna derecha: Escultura cinética KYVORA K dimensional + Studio/Lab */}
           <MotionReveal immediate delay={0.1} className="lg:col-span-5">
             <KyvoraHeroComposition />
           </MotionReveal>
         </div>
 
-        {/* Matriz de arquitectura y capacidades base */}
+        {/* Matriz HUD de arquitectura y capacidades base */}
         <MotionReveal immediate delay={0.18}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[#252D3A] rounded-2xl overflow-hidden border border-[#252D3A]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[#252D3A]/85 rounded-2xl overflow-hidden border border-[#252D3A]/90 backdrop-blur-md shadow-2xl shadow-black/40">
             {specs.map((spec) => {
               const Icon = spec.icon;
               return (
                 <div
                   key={spec.title}
-                  className="bg-[#0D121D] p-5 flex items-start gap-3.5 hover:bg-[#141B2B]/90 transition-colors"
+                  className="group relative bg-[#0D121D]/85 p-5 flex items-start gap-3.5 hover:bg-[#141B2B]/95 transition-all duration-300"
                 >
-                  <Icon className="w-5 h-5 text-[#2B85FF] shrink-0 mt-0.5" aria-hidden="true" />
-                  <div className="space-y-1">
-                    <span className="block text-[11px] font-mono uppercase tracking-[0.14em] text-[#9AA5B8]">
-                      {spec.title}
-                    </span>
-                    <p className="text-sm font-medium text-white">{spec.value}</p>
+                  <div className="relative p-2 rounded-lg bg-[#141B2B] border border-[#252D3A] text-[#2B85FF] group-hover:text-[#5CA8FF] group-hover:border-[#2B85FF]/40 transition-colors">
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                  </div>
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="block text-[11px] font-mono uppercase tracking-[0.14em] text-[#9AA5B8]">
+                        {spec.title}
+                      </span>
+                      <span className="text-[9px] font-mono text-[#5CA8FF]/80 tracking-wider">
+                        {spec.status}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-white truncate">{spec.value}</p>
                   </div>
                 </div>
               );

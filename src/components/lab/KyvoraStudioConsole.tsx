@@ -2,8 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Film, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Eye, EyeOff, Layers } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function KyvoraStudioConsole() {
+  const { language } = useLanguage();
+  const isEn = language === "en";
   const [playheadPos, setPlayheadPos] = useState(140); // 10 to 470 px
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
@@ -52,12 +55,16 @@ export default function KyvoraStudioConsole() {
           </span>
           <span className="text-white font-semibold tracking-wider">LAB-04 // KYVORA STUDIO</span>
           <span className="text-[#252D3A]">|</span>
-          <span className="text-[#9AA5B8] uppercase">Editor NLE de Escritorio (Tauri 2 + FFmpeg 7)</span>
+          <span className="text-[#9AA5B8] uppercase">
+            {isEn
+              ? "Desktop NLE Editor (Tauri 2 + FFmpeg 7)"
+              : "Editor NLE de Escritorio (Tauri 2 + FFmpeg 7)"}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium border bg-purple-500/10 border-purple-500/30 text-purple-300">
-            EN DESARROLLO
+            {isEn ? "IN DEVELOPMENT" : "EN DESARROLLO"}
           </span>
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono border bg-[#141B2B] border-[#252D3A] text-[#AFC4E8]">
             TAURI 2 + RUST + FFMPEG
@@ -72,10 +79,16 @@ export default function KyvoraStudioConsole() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-[#AFC4E8] flex items-center gap-2">
               <Layers className="w-3.5 h-3.5 text-purple-400" aria-hidden="true" />
-              <span>Línea de Tiempo Multipista (Proyecto .XTP)</span>
+              <span>
+                {isEn
+                  ? "Multi-Track Timeline (.XTP Project)"
+                  : "Línea de Tiempo Multipista (Proyecto .XTP)"}
+              </span>
             </span>
             <span className="text-[10px] font-mono text-[#9AA5B8]">
-              [SIMULACIÓN INTERACTIVA DE SUITE NLE]
+              {isEn
+                ? "[INTERACTIVE NLE SUITE SIMULATION]"
+                : "[SIMULACIÓN INTERACTIVA DE SUITE NLE]"}
             </span>
           </div>
 
@@ -88,7 +101,7 @@ export default function KyvoraStudioConsole() {
                   type="button"
                   onClick={() => handleStepPlayhead(-40)}
                   className="p-1.5 rounded bg-[#080B12] hover:bg-[#141B2B] text-[#AFC4E8] border border-[#252D3A] cursor-pointer"
-                  title="Retroceder 40 frames"
+                  title={isEn ? "Step back 40 frames" : "Retroceder 40 frames"}
                 >
                   <SkipBack className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
@@ -98,13 +111,15 @@ export default function KyvoraStudioConsole() {
                   className="px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1.5 cursor-pointer font-semibold shadow-sm shadow-purple-600/30"
                 >
                   {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
-                  <span>{isPlaying ? "Pausar" : "Reproducir"}</span>
+                  <span>
+                    {isPlaying ? (isEn ? "Pause" : "Pausar") : isEn ? "Play" : "Reproducir"}
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleStepPlayhead(40)}
                   className="p-1.5 rounded bg-[#080B12] hover:bg-[#141B2B] text-[#AFC4E8] border border-[#252D3A] cursor-pointer"
-                  title="Avanzar 40 frames"
+                  title={isEn ? "Step forward 40 frames" : "Avanzar 40 frames"}
                 >
                   <SkipForward className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
@@ -140,7 +155,11 @@ export default function KyvoraStudioConsole() {
                     opacity={isTitlesVisible ? 0.8 : 0.3}
                   />
                   <text x="70" y="18" fill="#FFFFFF" fontSize="9">
-                    {isTitlesVisible ? "LowerThird_Intro.xtp" : "(Pista Oculta)"}
+                    {isTitlesVisible
+                      ? "LowerThird_Intro.xtp"
+                      : isEn
+                        ? "(Track Hidden)"
+                        : "(Pista Oculta)"}
                   </text>
                 </g>
 
@@ -149,7 +168,11 @@ export default function KyvoraStudioConsole() {
                   <rect x="5" y="0" width="40" height="36" rx="3" fill="#141B2B" stroke="#252D3A" />
                   <text x="25" y="22" textAnchor="middle" fill="#5CA8FF" fontSize="9" fontWeight="bold">V1</text>
                   <rect x="55" y="2" width="380" height="32" rx="4" fill="#1677FF" opacity="0.8" />
-                  <text x="70" y="22" fill="#FFFFFF" fontSize="9">Clip_Principal_1080p60.mp4 (FFmpeg Stream)</text>
+                  <text x="70" y="22" fill="#FFFFFF" fontSize="9">
+                    {isEn
+                      ? "Main_Clip_1080p60.mp4 (FFmpeg Stream)"
+                      : "Clip_Principal_1080p60.mp4 (FFmpeg Stream)"}
+                  </text>
                 </g>
 
                 {/* Pista A1: Audio Estéreo 48kHz */}
@@ -166,7 +189,11 @@ export default function KyvoraStudioConsole() {
                     opacity={isAudioMuted ? 0.3 : 0.8}
                   />
                   <text x="70" y="22" fill="#FFFFFF" fontSize="9">
-                    {isAudioMuted ? "Audio_Master_48kHz.wav (MUTED)" : "Audio_Master_48kHz.wav (Activo)"}
+                    {isAudioMuted
+                      ? "Audio_Master_48kHz.wav (MUTED)"
+                      : isEn
+                        ? "Audio_Master_48kHz.wav (Active)"
+                        : "Audio_Master_48kHz.wav (Activo)"}
                   </text>
                 </g>
 
@@ -192,7 +219,15 @@ export default function KyvoraStudioConsole() {
                   }`}
                 >
                   {isAudioMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                  <span>{isAudioMuted ? "A1 Desactivado" : "A1 Activo"}</span>
+                  <span>
+                    {isAudioMuted
+                      ? isEn
+                        ? "A1 Muted"
+                        : "A1 Desactivado"
+                      : isEn
+                        ? "A1 Active"
+                        : "A1 Activo"}
+                  </span>
                 </button>
 
                 <button
@@ -205,7 +240,15 @@ export default function KyvoraStudioConsole() {
                   }`}
                 >
                   {!isTitlesVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  <span>{isTitlesVisible ? "T1 Visible" : "T1 Oculto"}</span>
+                  <span>
+                    {isTitlesVisible
+                      ? isEn
+                        ? "T1 Visible"
+                        : "T1 Visible"
+                      : isEn
+                        ? "T1 Hidden"
+                        : "T1 Oculto"}
+                  </span>
                 </button>
               </div>
 
@@ -219,7 +262,7 @@ export default function KyvoraStudioConsole() {
                   value={playheadPos}
                   onChange={(e) => setPlayheadPos(Number(e.target.value))}
                   className="w-28 accent-purple-500 cursor-pointer"
-                  aria-label="Posición de cabezal de tiempo"
+                  aria-label={isEn ? "Timeline playhead position" : "Posición de cabezal de tiempo"}
                 />
               </div>
             </div>
@@ -231,11 +274,13 @@ export default function KyvoraStudioConsole() {
           <div className="p-4 rounded-xl bg-[#0D121D] border border-[#252D3A] space-y-4 font-mono text-xs">
             <div className="flex items-center justify-between border-b border-[#252D3A] pb-3">
               <div>
-                <span className="text-[10px] uppercase text-[#9AA5B8]">Monitor de Preview</span>
+                <span className="text-[10px] uppercase text-[#9AA5B8]">
+                  {isEn ? "Preview Monitor" : "Monitor de Preview"}
+                </span>
                 <h3 className="text-sm font-bold text-white">1080p @ 60 FPS</h3>
               </div>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/10 text-purple-300 border border-purple-500/30">
-                PROYECTO .XTP
+                {isEn ? ".XTP PROJECT" : "PROYECTO .XTP"}
               </span>
             </div>
 
@@ -246,22 +291,38 @@ export default function KyvoraStudioConsole() {
                   Frame #{Math.floor((playheadPos / 470) * 1800)}
                 </span>
                 <span className="text-white text-xs font-light block">
-                  {isTitlesVisible ? "Título Activo: LowerThird_Intro" : "Sin overlays"}
+                  {isTitlesVisible
+                    ? isEn
+                      ? "Active Title: LowerThird_Intro"
+                      : "Título Activo: LowerThird_Intro"
+                    : isEn
+                      ? "No overlays"
+                      : "Sin overlays"}
                 </span>
                 <span className="text-[10px] text-[#9AA5B8] block">
-                  {isAudioMuted ? "Pista de audio silenciada" : "Canal estéreo 48 kHz normalizado"}
+                  {isAudioMuted
+                    ? isEn
+                      ? "Audio track muted"
+                      : "Pista de audio silenciada"
+                    : isEn
+                      ? "Normalized 48 kHz stereo channel"
+                      : "Canal estéreo 48 kHz normalizado"}
                 </span>
               </div>
               <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-[#080B12]/80 border border-[#252D3A] text-[9px] text-[#5CA8FF]">
-                [PREVIEW SIMULADO]
+                {isEn ? "[SIMULATED PREVIEW]" : "[PREVIEW SIMULADO]"}
               </div>
             </div>
 
             {/* Parámetros de Render y Exportación */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#9AA5B8]">Perfil de Exportación FFmpeg</span>
-                <span className="text-[9px] text-purple-300">[CONFIGURACIÓN]</span>
+                <span className="text-[#9AA5B8]">
+                  {isEn ? "FFmpeg Export Profile" : "Perfil de Exportación FFmpeg"}
+                </span>
+                <span className="text-[9px] text-purple-300">
+                  {isEn ? "[CONFIG]" : "[CONFIGURACIÓN]"}
+                </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {(["H.264", "ProRes-Proxy", "VP9"] as const).map((codec) => (
@@ -284,22 +345,29 @@ export default function KyvoraStudioConsole() {
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Motor Render</span>
-                  <span className="text-[9px] text-[#5CA8FF] font-semibold">[ARQUITECTURA]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Render Engine" : "Motor Render"}</span>
+                  <span className="text-[9px] text-[#5CA8FF] font-semibold">
+                    {isEn ? "[ARCHITECTURE]" : "[ARQUITECTURA]"}
+                  </span>
                 </div>
                 <span className="text-white font-medium block mt-1">FFmpeg 7 CLI</span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-[#9AA5B8]">Runtime Host</span>
-                  <span className="text-[9px] text-emerald-400 font-semibold">[ESCRITORIO]</span>
+                  <span className="text-[9px] text-emerald-400 font-semibold">
+                    {isEn ? "[DESKTOP]" : "[ESCRITORIO]"}
+                  </span>
                 </div>
                 <span className="text-emerald-400 font-medium block mt-1">Tauri 2 (Rust)</span>
               </div>
             </div>
 
             <div className="p-3 rounded bg-[#080B12] border border-[#252D3A] text-[11px] text-[#AFC4E8]/80 leading-relaxed">
-              <strong>Arquitectura NLE:</strong> Kyvora Studio está estructurado en monorepo de escritorio. Utiliza streaming nativo sobre Windows sin frameworks de canvas web pesados ni dependencias externas de composición en la nube.
+              <strong>{isEn ? "NLE Architecture:" : "Arquitectura NLE:"}</strong>{" "}
+              {isEn
+                ? "Kyvora Studio is structured as a desktop monorepo. It uses native Windows streaming without heavy web canvas frameworks or external cloud compositing dependencies."
+                : "Kyvora Studio está estructurado en monorepo de escritorio. Utiliza streaming nativo sobre Windows sin frameworks de canvas web pesados ni dependencias externas de composición en la nube."}
             </div>
           </div>
         </div>

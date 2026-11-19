@@ -28,7 +28,8 @@ const STAGE_ICONS: Record<string, LucideIcon> = {
 };
 
 export default function ProcessSection() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const isEn = language === "en";
   const prefersReduced = useReducedMotion();
 
   // Etapa 01 seleccionada por defecto conforme al requerimiento
@@ -224,7 +225,7 @@ export default function ProcessSection() {
                 {t.process.stageLabel} {activeStage.num} / 05
               </span>
               <span className="px-2 py-0.5 rounded bg-[#1677FF]/15 text-[#5CA8FF] border border-[#1677FF]/30 text-[10px] font-semibold">
-                ACTIVA
+                {isEn ? "ACTIVE" : "ACTIVA"}
               </span>
             </div>
           </div>
@@ -345,7 +346,7 @@ export default function ProcessSection() {
                 </div>
 
                 <div className="text-[11px] font-mono text-[#9AA5B8] flex items-center gap-2">
-                  <span>NAV SECUENCIAL:</span>
+                  <span>{isEn ? "SEQUENTIAL NAV:" : "NAV SECUENCIAL:"}</span>
                   <span className="text-[#5CA8FF] font-semibold">
                     {activeStage.num} / 05
                   </span>

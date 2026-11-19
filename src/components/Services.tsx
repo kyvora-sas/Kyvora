@@ -25,87 +25,99 @@ import type { Translations } from "@/i18n/translations";
 
 type ServiceItem = Translations["services"]["items"][number];
 
-// Mapeo técnico editorial por célula
+// Mapeo técnico editorial por célula (bilingüe ES / EN)
 interface CellMetadata {
   sysCode: string;
-  divisionLabel: string;
+  divisionLabel: { es: string; en: string };
   icon: LucideIcon;
   accentColor: string;
   gradientText: string;
-  badgeLabel: string;
-  capabilities: string[];
+  badgeLabel: { es: string; en: string };
+  capabilities: { es: string[]; en: string[] };
   schematic: {
-    nodeA: string;
-    nodeB: string;
-    nodeC: string;
+    nodeA: { es: string; en: string };
+    nodeB: { es: string; en: string };
+    nodeC: { es: string; en: string };
     metricLabel: string;
-    metricValue: string;
+    metricValue: { es: string; en: string };
   };
 }
 
 const CELL_METADATA: Record<string, CellMetadata> = {
   "web-development": {
     sysCode: "SYS-01 :: ARCH-WEB",
-    divisionLabel: "STUDIO PLATFORMS",
+    divisionLabel: { es: "STUDIO PLATFORMS", en: "STUDIO PLATFORMS" },
     icon: Globe,
     accentColor: "#1677FF",
     gradientText: "from-[#1677FF] to-[#5CA8FF]",
-    badgeLabel: "ALTO RENDIMIENTO",
-    capabilities: ["Next.js 16", "React 19", "Tailwind CSS", "SEO Semántico", "Core Web Vitals 100"],
+    badgeLabel: { es: "ALTO RENDIMIENTO", en: "HIGH PERFORMANCE" },
+    capabilities: {
+      es: ["Next.js 16", "React 19", "Tailwind CSS", "SEO Semántico", "Core Web Vitals 100"],
+      en: ["Next.js 16", "React 19", "Tailwind CSS", "Semantic SEO", "Core Web Vitals 100"],
+    },
     schematic: {
-      nodeA: "Edge CDN",
-      nodeB: "SSR Next.js",
-      nodeC: "DOM React 19",
+      nodeA: { es: "Edge CDN", en: "Edge CDN" },
+      nodeB: { es: "SSR Next.js", en: "SSR Next.js" },
+      nodeC: { es: "DOM React 19", en: "DOM React 19" },
       metricLabel: "Render Latency",
-      metricValue: "< 850 ms",
+      metricValue: { es: "< 850 ms", en: "< 850 ms" },
     },
   },
   "app-development": {
     sysCode: "SYS-02 :: CLIENT-PWA",
-    divisionLabel: "MOBILE & CLIENTS",
+    divisionLabel: { es: "MOBILE & CLIENTS", en: "MOBILE & CLIENTS" },
     icon: Smartphone,
     accentColor: "#2B85FF",
     gradientText: "from-[#2B85FF] to-[#AFC4E8]",
-    badgeLabel: "EXPERIENCIA TÁCTIL",
-    capabilities: ["PWA Híbrida", "Offline Cache", "WebSockets", "OAuth 2.0 / MFA", "React Native / Flutter"],
+    badgeLabel: { es: "EXPERIENCIA TÁCTIL", en: "TOUCH EXPERIENCE" },
+    capabilities: {
+      es: ["PWA Híbrida", "Offline Cache", "WebSockets", "OAuth 2.0 / MFA", "React Native / Flutter"],
+      en: ["Hybrid PWA", "Offline Cache", "WebSockets", "OAuth 2.0 / MFA", "React Native / Flutter"],
+    },
     schematic: {
-      nodeA: "Dispositivo Táctil",
-      nodeB: "Cache Offline",
-      nodeC: "API Gateway",
+      nodeA: { es: "Dispositivo Táctil", en: "Touch Device" },
+      nodeB: { es: "Cache Offline", en: "Offline Cache" },
+      nodeC: { es: "API Gateway", en: "API Gateway" },
       metricLabel: "Sync State",
-      metricValue: "Realtime",
+      metricValue: { es: "Realtime", en: "Realtime" },
     },
   },
   "custom-systems": {
     sysCode: "SYS-03 :: CORE-RELATIONAL",
-    divisionLabel: "INFRAESTRUCTURA CORE",
+    divisionLabel: { es: "INFRAESTRUCTURA CORE", en: "CORE INFRASTRUCTURE" },
     icon: Database,
     accentColor: "#5CA8FF",
     gradientText: "from-[#5CA8FF] to-[#2B85FF]",
-    badgeLabel: "CONCURRENCIA ATÓMICA",
-    capabilities: ["PostgreSQL / Neon", "Transacciones ACID", "APIs RESTful", "RBAC Granular", "Logs de Auditoría"],
+    badgeLabel: { es: "CONCURRENCIA ATÓMICA", en: "ATOMIC CONCURRENCY" },
+    capabilities: {
+      es: ["PostgreSQL / Neon", "Transacciones ACID", "APIs RESTful", "RBAC Granular", "Logs de Auditoría"],
+      en: ["PostgreSQL / Neon", "ACID Transactions", "RESTful APIs", "Granular RBAC", "Audit Logs"],
+    },
     schematic: {
-      nodeA: "Transacción ACID",
-      nodeB: "PostgreSQL Core",
-      nodeC: "Bóveda Auditoría",
+      nodeA: { es: "Transacción ACID", en: "ACID Transaction" },
+      nodeB: { es: "PostgreSQL Core", en: "PostgreSQL Core" },
+      nodeC: { es: "Bóveda Auditoría", en: "Audit Vault" },
       metricLabel: "Integrity Lock",
-      metricValue: "Strict TLS",
+      metricValue: { es: "Strict TLS", en: "Strict TLS" },
     },
   },
   "automation-ai": {
     sysCode: "SYS-04 :: AGENT-LLM",
-    divisionLabel: "INTEGRACIÓN & AGENTES",
+    divisionLabel: { es: "INTEGRACIÓN & AGENTES", en: "INTEGRATION & AGENTS" },
     icon: BrainCircuit,
     accentColor: "#1677FF",
     gradientText: "from-[#2B85FF] via-[#5CA8FF] to-[#AFC4E8]",
-    badgeLabel: "ORQUESTACIÓN LLM",
-    capabilities: ["OpenAI / Anthropic APIs", "Contextual RAG", "Guardrails Deterministas", "Pipelines Webhook", "Zero Hallucination"],
+    badgeLabel: { es: "ORQUESTACIÓN LLM", en: "LLM ORCHESTRATION" },
+    capabilities: {
+      es: ["OpenAI / Anthropic APIs", "Contextual RAG", "Guardrails Deterministas", "Pipelines Webhook", "Zero Hallucination"],
+      en: ["OpenAI / Anthropic APIs", "Contextual RAG", "Deterministic Guardrails", "Webhook Pipelines", "Zero Hallucination"],
+    },
     schematic: {
-      nodeA: "Parser de Intención",
-      nodeB: "Inferencia LLM",
-      nodeC: "Filtro Determinista",
+      nodeA: { es: "Parser de Intención", en: "Intent Parser" },
+      nodeB: { es: "Inferencia LLM", en: "LLM Inference" },
+      nodeC: { es: "Filtro Determinista", en: "Deterministic Filter" },
       metricLabel: "Safety Guard",
-      metricValue: "100% Verificado",
+      metricValue: { es: "100% Verificado", en: "100% Verified" },
     },
   },
 };
@@ -205,7 +217,8 @@ function ServiceDetailBody({
 }
 
 export default function Services() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const isEn = language === "en";
   const prefersReduced = useReducedMotion();
   const canHover = useSyncExternalStore(subscribeHover, getHoverSnapshot, getServerSnapshot);
 
@@ -224,11 +237,11 @@ export default function Services() {
   };
 
   const filterOptions = [
-    { id: "all", label: "Todos", code: "SYS-ALL" },
-    { id: "web-development", label: "Web & Plataformas", code: "SYS-01" },
-    { id: "app-development", label: "Apps & Móvil", code: "SYS-02" },
-    { id: "custom-systems", label: "Sistemas Core", code: "SYS-03" },
-    { id: "automation-ai", label: "Automatización & IA", code: "SYS-04" },
+    { id: "all", label: isEn ? "All" : "Todos", code: "SYS-ALL" },
+    { id: "web-development", label: isEn ? "Web & Platforms" : "Web & Plataformas", code: "SYS-01" },
+    { id: "app-development", label: isEn ? "Apps & Mobile" : "Apps & Móvil", code: "SYS-02" },
+    { id: "custom-systems", label: isEn ? "Core Systems" : "Sistemas Core", code: "SYS-03" },
+    { id: "automation-ai", label: isEn ? "Automation & AI" : "Automatización & IA", code: "SYS-04" },
   ];
 
   const displayedServices =
@@ -272,7 +285,7 @@ export default function Services() {
         </div>
 
         {/* Píldoras de Filtrado Segmentado con Respuesta Táctil y Accesibilidad */}
-        <div className="mb-10 flex flex-wrap items-center gap-2 sm:gap-2.5" role="tablist" aria-label="Filtro de Células de Servicio">
+        <div className="mb-10 flex flex-wrap items-center gap-2 sm:gap-2.5" role="tablist" aria-label={isEn ? "Service Cells Filter" : "Filtro de Células de Servicio"}>
           {filterOptions.map((opt) => {
             const isActive = activeFilter === opt.id;
             return (
@@ -337,13 +350,13 @@ export default function Services() {
                     <div className="flex items-center gap-2 text-[#AFC4E8]">
                       <span className="text-[#2B85FF] font-semibold">{meta.sysCode}</span>
                       <span className="text-[#252D3A]">|</span>
-                      <span className="text-[#9AA5B8] uppercase">{meta.divisionLabel}</span>
+                      <span className="text-[#9AA5B8] uppercase">{meta.divisionLabel[language]}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-pulse" />
                       <span className="text-[10px] uppercase tracking-widest text-[#5CA8FF] bg-[#141B2B] px-2 py-0.5 rounded border border-[#252D3A]">
-                        {meta.badgeLabel}
+                        {meta.badgeLabel[language]}
                       </span>
                     </div>
                   </div>
@@ -372,30 +385,32 @@ export default function Services() {
                     {/* Esquema de Flujo Arquitectónico Vectorial Ligero (SVG 0 ms CPU) */}
                     <div className="my-4 p-3.5 rounded-xl bg-[#080B12]/80 border border-[#252D3A]/90 font-mono text-[11px]">
                       <div className="flex items-center justify-between text-[#9AA5B8] mb-2.5">
-                        <span className="text-[10px] uppercase tracking-wider text-[#AFC4E8]">Flujo de Arquitectura</span>
+                        <span className="text-[10px] uppercase tracking-wider text-[#AFC4E8]">
+                          {isEn ? "Architecture Flow" : "Flujo de Arquitectura"}
+                        </span>
                         <span className="text-[10px] text-[#5CA8FF]">
-                          {meta.schematic.metricLabel}: <strong className="text-white">{meta.schematic.metricValue}</strong>
+                          {meta.schematic.metricLabel}: <strong className="text-white">{meta.schematic.metricValue[language]}</strong>
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-[#AFC4E8]">
                         <div className="px-2 py-1 rounded bg-[#141B2B] border border-[#252D3A] truncate">
-                          {meta.schematic.nodeA}
+                          {meta.schematic.nodeA[language]}
                         </div>
                         <span className="text-[#2B85FF] shrink-0">→</span>
                         <div className="px-2 py-1 rounded bg-[#141B2B] border border-[#252D3A] text-white font-medium truncate">
-                          {meta.schematic.nodeB}
+                          {meta.schematic.nodeB[language]}
                         </div>
                         <span className="text-[#2B85FF] shrink-0">→</span>
                         <div className="px-2 py-1 rounded bg-[#141B2B] border border-[#252D3A] text-[#5CA8FF] truncate">
-                          {meta.schematic.nodeC}
+                          {meta.schematic.nodeC[language]}
                         </div>
                       </div>
                     </div>
 
                     {/* Píldoras de Capacidades Integradas */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {meta.capabilities.map((cap) => (
+                      {meta.capabilities[language].map((cap) => (
                         <span
                           key={cap}
                           className="px-2.5 py-1 rounded-lg bg-[#080B12] border border-[#252D3A] text-[11px] font-mono text-[#AFC4E8]/85"
@@ -413,7 +428,15 @@ export default function Services() {
                         aria-expanded={isExpanded}
                         className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#5CA8FF] hover:text-white transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
                       >
-                        <span>{isExpanded ? "Ocultar especificación" : "Inspeccionar ficha técnica"}</span>
+                        <span>
+                          {isExpanded
+                            ? isEn
+                              ? "Hide specification"
+                              : "Ocultar especificación"
+                            : isEn
+                              ? "Inspect technical spec"
+                              : "Inspeccionar ficha técnica"}
+                        </span>
                         {isExpanded ? (
                           <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
                         ) : (
@@ -426,7 +449,7 @@ export default function Services() {
                         onClick={() => triggerContactServiceSelection(service.id)}
                         className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[#AFC4E8] hover:text-white transition-colors group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
                       >
-                        <span>Cotizar {service.num}</span>
+                        <span>{isEn ? `Quote ${service.num}` : `Cotizar ${service.num}`}</span>
                         <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                       </Link>
                     </div>
@@ -457,7 +480,11 @@ export default function Services() {
         <div className="mt-14 pt-8 border-t border-[#252D3A] flex flex-wrap items-center justify-between gap-4">
           <div className="text-xs font-mono uppercase tracking-wider text-[#9AA5B8] flex items-center gap-2">
             <Layers className="w-4 h-4 text-[#2B85FF]" aria-hidden="true" />
-            <span>Áreas transversales de ingeniería KYVORA:</span>
+            <span>
+              {isEn
+                ? "KYVORA cross-cutting engineering areas:"
+                : "Áreas transversales de ingeniería KYVORA:"}
+            </span>
           </div>
 
           <div className="flex flex-wrap gap-2">

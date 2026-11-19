@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Activity, Radio, MapPin, Database, RefreshCw, AlertCircle } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface StationNode {
   id: string;
-  name: string;
+  name: { es: string; en: string };
   code: string;
   lat: string;
   lng: string;
@@ -19,7 +20,7 @@ interface StationNode {
 const STATIONS: StationNode[] = [
   {
     id: "bog",
-    name: "Estación Piloto Bogotá",
+    name: { es: "Estación Piloto Bogotá", en: "Bogotá Pilot Station" },
     code: "NODE-BOG-01",
     lat: "4.7110° N",
     lng: "74.0721° W",
@@ -30,7 +31,7 @@ const STATIONS: StationNode[] = [
   },
   {
     id: "cali",
-    name: "Estación Piloto Cali",
+    name: { es: "Estación Piloto Cali", en: "Cali Pilot Station" },
     code: "NODE-CLO-02",
     lat: "3.4516° N",
     lng: "76.5320° W",
@@ -41,7 +42,7 @@ const STATIONS: StationNode[] = [
   },
   {
     id: "med",
-    name: "Estación Piloto Medellín",
+    name: { es: "Estación Piloto Medellín", en: "Medellín Pilot Station" },
     code: "NODE-MDE-03",
     lat: "6.2442° N",
     lng: "75.5812° W",
@@ -53,6 +54,8 @@ const STATIONS: StationNode[] = [
 ];
 
 export default function QuakeNetConsole() {
+  const { language } = useLanguage();
+  const isEn = language === "en";
   const prefersReduced = useReducedMotion();
   const [selectedStation, setSelectedStation] = useState<StationNode>(STATIONS[0]);
   const [isPerturbationActive, setIsPerturbationActive] = useState<boolean>(false);
@@ -90,10 +93,10 @@ export default function QuakeNetConsole() {
 
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium border bg-amber-500/10 border-amber-500/30 text-amber-300">
-            PROTOTIPO EXPERIMENTAL
+            {isEn ? "EXPERIMENTAL PROTOTYPE" : "PROTOTIPO EXPERIMENTAL"}
           </span>
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono border bg-[#141B2B] border-[#252D3A] text-[#AFC4E8]">
-            IoT MICRO-SENSORES
+            {isEn ? "IoT MICRO-SENSORS" : "IoT MICRO-SENSORES"}
           </span>
         </div>
       </div>
@@ -105,10 +108,16 @@ export default function QuakeNetConsole() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-[#AFC4E8] flex items-center gap-2">
               <MapPin className="w-3.5 h-3.5 text-[#2B85FF]" aria-hidden="true" />
-              <span>Topología de Red Sísmica (PostGIS Nodes)</span>
+              <span>
+                {isEn
+                  ? "Seismic Network Topology (PostGIS Nodes)"
+                  : "Topología de Red Sísmica (PostGIS Nodes)"}
+              </span>
             </span>
             <span className="text-[10px] font-mono text-[#9AA5B8]">
-              [SIMULACIÓN VISUAL · DATOS DE LABORATORIO]
+              {isEn
+                ? "[VISUAL SIMULATION · LAB DATA]"
+                : "[SIMULACIÓN VISUAL · DATOS DE LABORATORIO]"}
             </span>
           </div>
 
@@ -117,7 +126,11 @@ export default function QuakeNetConsole() {
             <svg
               viewBox="0 0 520 220"
               className="w-full h-auto select-none"
-              aria-label="Mapa esquemático de estaciones QuakeNet con coordenadas PostGIS"
+              aria-label={
+                isEn
+                  ? "Schematic map of QuakeNet stations with PostGIS coordinates"
+                  : "Mapa esquemático de estaciones QuakeNet con coordenadas PostGIS"
+              }
             >
               {/* Cuadrícula de coordenadas geoespaciales PostGIS */}
               <defs>
@@ -149,7 +162,7 @@ export default function QuakeNetConsole() {
                 onClick={() => setSelectedStation(STATIONS[0])}
                 tabIndex={0}
                 role="button"
-                aria-label="NODE-BOG: Estación Bogotá"
+                aria-label={isEn ? "NODE-BOG: Bogotá Station" : "NODE-BOG: Estación Bogotá"}
                 onKeyDown={(e) => e.key === "Enter" && setSelectedStation(STATIONS[0])}
               >
                 <circle
@@ -171,7 +184,7 @@ export default function QuakeNetConsole() {
                 onClick={() => setSelectedStation(STATIONS[1])}
                 tabIndex={0}
                 role="button"
-                aria-label="NODE-CLO: Estación Cali"
+                aria-label={isEn ? "NODE-CLO: Cali Station" : "NODE-CLO: Estación Cali"}
                 onKeyDown={(e) => e.key === "Enter" && setSelectedStation(STATIONS[1])}
               >
                 <circle
@@ -193,7 +206,7 @@ export default function QuakeNetConsole() {
                 onClick={() => setSelectedStation(STATIONS[2])}
                 tabIndex={0}
                 role="button"
-                aria-label="NODE-MDE: Estación Medellín"
+                aria-label={isEn ? "NODE-MDE: Medellín Station" : "NODE-MDE: Estación Medellín"}
                 onKeyDown={(e) => e.key === "Enter" && setSelectedStation(STATIONS[2])}
               >
                 <circle
@@ -229,7 +242,11 @@ export default function QuakeNetConsole() {
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-[#9AA5B8] flex items-center gap-2">
                 <Activity className="w-3.5 h-3.5 text-[#5CA8FF]" aria-hidden="true" />
-                <span>Canal Z (Acelerómetro MPU-6050 Simulado)</span>
+                <span>
+                  {isEn
+                    ? "Z-Axis Channel (Simulated MPU-6050 Accelerometer)"
+                    : "Canal Z (Acelerómetro MPU-6050 Simulado)"}
+                </span>
               </span>
               <span className="text-[10px] text-[#5CA8FF] font-mono">
                 {isPerturbationActive ? "TEST SIGNAL DETECTED" : "BASELINE STABLE"}
@@ -259,8 +276,12 @@ export default function QuakeNetConsole() {
           <div className="p-4 rounded-xl bg-[#0D121D] border border-[#252D3A] space-y-4">
             <div className="flex items-center justify-between border-b border-[#252D3A] pb-3">
               <div>
-                <span className="text-[10px] font-mono uppercase text-[#9AA5B8]">Estación Seleccionada</span>
-                <h3 className="text-sm font-bold text-white font-mono">{selectedStation.name}</h3>
+                <span className="text-[10px] font-mono uppercase text-[#9AA5B8]">
+                  {isEn ? "Selected Station" : "Estación Seleccionada"}
+                </span>
+                <h3 className="text-sm font-bold text-white font-mono">
+                  {selectedStation.name[language]}
+                </h3>
               </div>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#141B2B] text-[#5CA8FF] border border-[#252D3A]">
                 {selectedStation.code}
@@ -270,31 +291,37 @@ export default function QuakeNetConsole() {
             <div className="grid grid-cols-2 gap-3 text-xs font-mono">
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Latitud</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Latitude" : "Latitud"}</span>
                   <span className="text-[9px] text-[#5CA8FF] font-semibold">[CONFIG]</span>
                 </div>
                 <span className="text-white font-medium block mt-1">{selectedStation.lat}</span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Longitud</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Longitude" : "Longitud"}</span>
                   <span className="text-[9px] text-[#5CA8FF] font-semibold">[CONFIG]</span>
                 </div>
                 <span className="text-white font-medium block mt-1">{selectedStation.lng}</span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Profundidad</span>
-                  <span className="text-[9px] text-amber-300 font-semibold">[CALIBRACIÓN]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Depth" : "Profundidad"}</span>
+                  <span className="text-[9px] text-amber-300 font-semibold">
+                    {isEn ? "[CALIBRATION]" : "[CALIBRACIÓN]"}
+                  </span>
                 </div>
                 <span className="text-white font-medium block mt-1">{selectedStation.depthKm} km</span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Telemetría Rx</span>
-                  <span className="text-[9px] text-[#AFC4E8] font-semibold">[SIMULACIÓN]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Rx Telemetry" : "Telemetría Rx"}</span>
+                  <span className="text-[9px] text-[#AFC4E8] font-semibold">
+                    {isEn ? "[SIMULATION]" : "[SIMULACIÓN]"}
+                  </span>
                 </div>
-                <span className="text-[#5CA8FF] font-medium block mt-1">{selectedStation.packetsRx} pkts ({selectedStation.lastPingMs} ms)</span>
+                <span className="text-[#5CA8FF] font-medium block mt-1">
+                  {selectedStation.packetsRx} pkts ({selectedStation.lastPingMs} ms)
+                </span>
               </div>
             </div>
 
@@ -302,12 +329,14 @@ export default function QuakeNetConsole() {
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-[#9AA5B8] flex items-center gap-1.5">
                   <Database className="w-3.5 h-3.5 text-[#2B85FF]" aria-hidden="true" />
-                  <span>Capa Espacial</span>
+                  <span>{isEn ? "Spatial Layer" : "Capa Espacial"}</span>
                 </span>
                 <span className="text-white">PostGIS ST_Point</span>
               </div>
               <div className="text-[11px] text-[#AFC4E8]/80 leading-relaxed">
-                Almacenamiento relacional en Supabase con índices espaciales GiST para cálculo de distancias euclidianas entre estaciones.
+                {isEn
+                  ? "Relational storage in Supabase with GiST spatial indexes for calculating Euclidean distances between stations."
+                  : "Almacenamiento relacional en Supabase con índices espaciales GiST para cálculo de distancias euclidianas entre estaciones."}
               </div>
             </div>
 
@@ -317,8 +346,19 @@ export default function QuakeNetConsole() {
               disabled={isPerturbationActive}
               className="w-full py-2.5 px-3 rounded-lg bg-[#141B2B] hover:bg-[#1C263B] text-white border border-[#252D3A] hover:border-[#2B85FF]/60 text-xs font-mono tracking-wider uppercase transition-colors flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#5CA8FF] ${isPerturbationActive ? "animate-spin" : ""}`} aria-hidden="true" />
-              <span>{isPerturbationActive ? "Transmitiendo perturbación..." : "Simular Perturbación de Prueba"}</span>
+              <RefreshCw
+                className={`w-3.5 h-3.5 text-[#5CA8FF] ${isPerturbationActive ? "animate-spin" : ""}`}
+                aria-hidden="true"
+              />
+              <span>
+                {isPerturbationActive
+                  ? isEn
+                    ? "Transmitting perturbation..."
+                    : "Transmitiendo perturbación..."
+                  : isEn
+                    ? "Simulate Test Perturbation"
+                    : "Simular Perturbación de Prueba"}
+              </span>
             </button>
           </div>
 
@@ -326,7 +366,10 @@ export default function QuakeNetConsole() {
           <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs font-mono flex items-start gap-2.5 text-amber-200/90">
             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
             <p className="leading-relaxed text-[11px]">
-              <strong>Aclaración Técnica:</strong> QuakeNet es un proyecto de investigación en hardware IoT y bases de datos espaciales. No reemplaza a las redes sismológicas oficiales ni emite alertas tempranas certificadas.
+              <strong>{isEn ? "Technical Clarification:" : "Aclaración Técnica:"}</strong>{" "}
+              {isEn
+                ? "QuakeNet is a research project in IoT hardware and spatial databases. It does not replace official seismological networks or issue certified early warnings."
+                : "QuakeNet es un proyecto de investigación en hardware IoT y bases de datos espaciales. No reemplaza a las redes sismológicas oficiales ni emite alertas tempranas certificadas."}
             </p>
           </div>
         </div>

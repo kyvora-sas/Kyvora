@@ -22,40 +22,84 @@ import { KineticHeadline, MotionReveal } from "@/components/motion/MotionPrimiti
 import dynamic from "next/dynamic";
 
 // Consolas interactivas del Laboratorio de I+D (Carga diferida bajo demanda)
-const ConsoleSkeleton = ({ name, code }: { name: string; code: string }) => (
-  <div
-    className="w-full min-h-[520px] rounded-2xl bg-[#080B12] border border-[#252D3A] flex flex-col items-center justify-center p-8 text-center font-mono text-xs"
-    aria-busy="true"
-  >
-    <div className="w-8 h-8 rounded-full border-2 border-[#1677FF] border-t-transparent animate-spin mb-4" />
-    <span className="text-white font-semibold tracking-wider">CARGANDO CONSOLA // {code}</span>
-    <span className="text-[#9AA5B8] text-[11px] mt-1">{name}</span>
-  </div>
-);
+const ConsoleSkeleton = ({
+  nameEs,
+  nameEn,
+  code,
+}: {
+  nameEs: string;
+  nameEn: string;
+  code: string;
+}) => {
+  const { language } = useLanguage();
+  const isEn = language === "en";
+  return (
+    <div
+      className="w-full min-h-[520px] rounded-2xl bg-[#080B12] border border-[#252D3A] flex flex-col items-center justify-center p-8 text-center font-mono text-xs"
+      aria-busy="true"
+    >
+      <div className="w-8 h-8 rounded-full border-2 border-[#1677FF] border-t-transparent animate-spin mb-4" />
+      <span className="text-white font-semibold tracking-wider">
+        {isEn ? `LOADING CONSOLE // ${code}` : `CARGANDO CONSOLA // ${code}`}
+      </span>
+      <span className="text-[#9AA5B8] text-[11px] mt-1">{isEn ? nameEn : nameEs}</span>
+    </div>
+  );
+};
 
 const QuakeNetConsole = dynamic(() => import("./lab/QuakeNetConsole"), {
   ssr: false,
-  loading: () => <ConsoleSkeleton code="LAB-01" name="QuakeNet // IoT Micro-sensores" />,
+  loading: () => (
+    <ConsoleSkeleton
+      code="LAB-01"
+      nameEs="QuakeNet // IoT Micro-sensores"
+      nameEn="QuakeNet // IoT Micro-sensors"
+    />
+  ),
 });
 
 const PulsoConsole = dynamic(() => import("./lab/PulsoConsole"), {
   ssr: false,
-  loading: () => <ConsoleSkeleton code="LAB-02" name="Pulso // Mensajería Realtime" />,
+  loading: () => (
+    <ConsoleSkeleton
+      code="LAB-02"
+      nameEs="Pulso // Mensajería Realtime"
+      nameEn="Pulso // Realtime Messaging"
+    />
+  ),
 });
 
 const VoiceTranslateConsole = dynamic(() => import("./lab/VoiceTranslateConsole"), {
   ssr: false,
-  loading: () => <ConsoleSkeleton code="LAB-03" name="VoiceTranslate // Gemini Flash + Web Speech" />,
+  loading: () => (
+    <ConsoleSkeleton
+      code="LAB-03"
+      nameEs="VoiceTranslate // Gemini Flash + Web Speech"
+      nameEn="VoiceTranslate // Gemini Flash + Web Speech"
+    />
+  ),
 });
 
 const KyvoraStudioConsole = dynamic(() => import("./lab/KyvoraStudioConsole"), {
   ssr: false,
-  loading: () => <ConsoleSkeleton code="LAB-04" name="Kyvora Studio // NLE Tauri 2 + FFmpeg 7" />,
+  loading: () => (
+    <ConsoleSkeleton
+      code="LAB-04"
+      nameEs="Kyvora Studio // NLE Tauri 2 + FFmpeg 7"
+      nameEn="Kyvora Studio // Tauri 2 + FFmpeg 7 NLE"
+    />
+  ),
 });
 
 const PulsAiConsole = dynamic(() => import("./lab/PulsAiConsole"), {
   ssr: false,
-  loading: () => <ConsoleSkeleton code="LAB-05" name="PulsAI // Ollama Local Gateway" />,
+  loading: () => (
+    <ConsoleSkeleton
+      code="LAB-05"
+      nameEs="PulsAI // Ollama Local Gateway"
+      nameEn="PulsAI // Local Ollama Gateway"
+    />
+  ),
 });
 
 const LAB_ORDER: { id: string; code: string; icon: typeof Radio }[] = [
@@ -91,7 +135,8 @@ function StatusBadge({
 
 export default function LabProjects() {
   const { language, t } = useLanguage();
-  const recursosHref = language === "en" ? "/recursos/en" : "/recursos";
+  const isEn = language === "en";
+  const recursosHref = isEn ? "/recursos/en" : "/recursos";
   const [activeProjectId, setActiveProjectId] = useState<string>("quakenet");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -182,7 +227,7 @@ export default function LabProjects() {
         <div className="mb-8">
           <div
             role="tablist"
-            aria-label="Proyectos de KYVORA Lab"
+            aria-label={isEn ? "KYVORA Lab Projects" : "Proyectos de KYVORA Lab"}
             className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#252D3A]/60 scrollbar-thin"
           >
             {orderedProjects.map((proj, idx) => {
@@ -269,7 +314,7 @@ export default function LabProjects() {
             {/* Columna 2: Stack Verificado */}
             <div className="md:col-span-3 space-y-2">
               <span className="text-[11px] font-mono uppercase tracking-wider text-white block">
-                Stack Tecnológico
+                {isEn ? "Technology Stack" : "Stack Tecnológico"}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {activeProject.technologies.map((tech) => (
@@ -287,7 +332,7 @@ export default function LabProjects() {
             <div className="md:col-span-3 space-y-3 flex flex-col justify-between h-full">
               <div>
                 <span className="text-[11px] font-mono uppercase tracking-wider text-white block mb-2">
-                  Código & Comunidad
+                  {isEn ? "Code & Community" : "Código & Comunidad"}
                 </span>
                 {activeProject.links?.repo ? (
                   <a
@@ -315,7 +360,7 @@ export default function LabProjects() {
                     className="text-[11px] font-mono text-[#5CA8FF] hover:text-white transition-colors flex items-center gap-1.5"
                   >
                     <HeartHandshake className="w-3.5 h-3.5 text-[#2B85FF]" />
-                    <span>Apoyar en Donate Us</span>
+                    <span>{isEn ? "Support on Donate Us" : "Apoyar en Donate Us"}</span>
                   </Link>
                 </div>
               )}

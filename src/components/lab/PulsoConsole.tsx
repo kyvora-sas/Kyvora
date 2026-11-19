@@ -2,57 +2,131 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Zap, Shield, Send, Wifi, AlertCircle } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface CommunityChannel {
   id: string;
   name: string;
-  topic: string;
+  topic: { es: string; en: string };
   activeClients: number;
   payloadAvgBytes: number;
+}
+
+interface ChatMessage {
+  id: string;
+  user: string;
+  text: string | { es: string; en: string };
+  time: string;
+  latency: number;
 }
 
 const CHANNELS: CommunityChannel[] = [
   {
     id: "general",
     name: "#general-latam",
-    topic: "Intercambio técnico y pruebas comunitarias de latencia",
+    topic: {
+      es: "Intercambio técnico y pruebas comunitarias de latencia",
+      en: "Technical exchange and community latency benchmarks",
+    },
     activeClients: 142,
     payloadAvgBytes: 68,
   },
   {
     id: "dev",
     name: "#flutter-realtime",
-    topic: "Optimización de frames e hilos en cliente móvil Flutter",
+    topic: {
+      es: "Optimización de frames e hilos en cliente móvil Flutter",
+      en: "Frame and isolate optimization in the Flutter mobile client",
+    },
     activeClients: 86,
     payloadAvgBytes: 52,
   },
   {
     id: "infra",
     name: "#websockets-perf",
-    topic: "Benchmarking de concurrencia y pools de conexión PostgreSQL",
+    topic: {
+      es: "Benchmarking de concurrencia y pools de conexión PostgreSQL",
+      en: "Concurrency benchmarking and PostgreSQL connection pooling",
+    },
     activeClients: 64,
     payloadAvgBytes: 94,
   },
 ];
 
-const INITIAL_MESSAGES: Record<string, Array<{ id: string; user: string; text: string; time: string; latency: number }>> = {
+const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
   general: [
-    { id: "g1", user: "dev_alex", text: "Verificando sincronización de sockets en cliente Flutter...", time: "20:41:02", latency: 16 },
-    { id: "g2", user: "kyv_node", text: "PostgreSQL persistió el mensaje con commit ACID.", time: "20:41:04", latency: 14 },
+    {
+      id: "g1",
+      user: "dev_alex",
+      text: {
+        es: "Verificando sincronización de sockets en cliente Flutter...",
+        en: "Verifying socket synchronization on Flutter client...",
+      },
+      time: "20:41:02",
+      latency: 16,
+    },
+    {
+      id: "g2",
+      user: "kyv_node",
+      text: {
+        es: "PostgreSQL persistió el mensaje con commit ACID.",
+        en: "PostgreSQL persisted the message with an ACID commit.",
+      },
+      time: "20:41:04",
+      latency: 14,
+    },
   ],
   dev: [
-    { id: "d1", user: "mobile_lead", text: "Frame rate estable a 60 FPS en Android con stream provider.", time: "20:39:15", latency: 18 },
-    { id: "d2", user: "flutter_fan", text: "Consumo de RAM del socket client reducido a 22 MB.", time: "20:40:01", latency: 12 },
+    {
+      id: "d1",
+      user: "mobile_lead",
+      text: {
+        es: "Frame rate estable a 60 FPS en Android con stream provider.",
+        en: "Stable 60 FPS frame rate on Android with stream provider.",
+      },
+      time: "20:39:15",
+      latency: 18,
+    },
+    {
+      id: "d2",
+      user: "flutter_fan",
+      text: {
+        es: "Consumo de RAM del socket client reducido a 22 MB.",
+        en: "Socket client RAM usage reduced to 22 MB.",
+      },
+      time: "20:40:01",
+      latency: 12,
+    },
   ],
   infra: [
-    { id: "i1", user: "sys_ops", text: "Prueba de carga: 1.000 clientes simulados sobre WSS Gateway.", time: "20:35:10", latency: 14 },
-    { id: "i2", user: "db_audit", text: "Índice B-Tree en messages(created_at) respondió en 2.4 ms.", time: "20:36:22", latency: 15 },
+    {
+      id: "i1",
+      user: "sys_ops",
+      text: {
+        es: "Prueba de carga: 1.000 clientes simulados sobre WSS Gateway.",
+        en: "Load test: 1,000 simulated clients over WSS Gateway.",
+      },
+      time: "20:35:10",
+      latency: 14,
+    },
+    {
+      id: "i2",
+      user: "db_audit",
+      text: {
+        es: "Índice B-Tree en messages(created_at) respondió en 2.4 ms.",
+        en: "B-Tree index on messages(created_at) responded in 2.4 ms.",
+      },
+      time: "20:36:22",
+      latency: 15,
+    },
   ],
 };
 
 export default function PulsoConsole() {
+  const { language } = useLanguage();
+  const isEn = language === "en";
   const [selectedChannel, setSelectedChannel] = useState<CommunityChannel>(CHANNELS[0]);
-  const [channelMessages, setChannelMessages] = useState(INITIAL_MESSAGES);
+  const [channelMessages, setChannelMessages] = useState<Record<string, ChatMessage[]>>(INITIAL_MESSAGES);
   const [inputMsg, setInputMsg] = useState("");
   const ackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -70,9 +144,9 @@ export default function PulsoConsole() {
 
     const userText = inputMsg.trim();
     const nowTime = new Date().toTimeString().split(" ")[0];
-    const userMsg = {
+    const userMsg: ChatMessage = {
       id: String(Date.now()),
-      user: "invitado_lab",
+      user: isEn ? "lab_guest" : "invitado_lab",
       text: userText,
       time: nowTime,
       latency: Math.floor(12 + Math.random() * 8),
@@ -87,10 +161,13 @@ export default function PulsoConsole() {
     // Respuesta simulada de confirmación del gateway WebSocket
     if (ackTimerRef.current) clearTimeout(ackTimerRef.current);
     ackTimerRef.current = setTimeout(() => {
-      const ackMsg = {
+      const ackMsg: ChatMessage = {
         id: String(Date.now() + 1),
         user: "pulso_wss",
-        text: `Ack broadcast: paquete de ${userText.length * 2}B retransmitido a ${selectedChannel.activeClients} pares.`,
+        text: {
+          es: `Ack broadcast: paquete de ${userText.length * 2}B retransmitido a ${selectedChannel.activeClients} pares.`,
+          en: `Ack broadcast: ${userText.length * 2}B packet relayed to ${selectedChannel.activeClients} peers.`,
+        },
         time: new Date().toTimeString().split(" ")[0],
         latency: 14,
       };
@@ -111,12 +188,16 @@ export default function PulsoConsole() {
           </span>
           <span className="text-white font-semibold tracking-wider">LAB-02 // PULSO</span>
           <span className="text-[#252D3A]">|</span>
-          <span className="text-[#9AA5B8] uppercase">Red Social & Mensajería de Baja Latencia</span>
+          <span className="text-[#9AA5B8] uppercase">
+            {isEn
+              ? "Low-Latency Social Network & Messaging"
+              : "Red Social & Mensajería de Baja Latencia"}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium border bg-[#1677FF]/15 border-[#2B85FF]/40 text-[#5CA8FF]">
-            FASE BETA
+            {isEn ? "BETA PHASE" : "FASE BETA"}
           </span>
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono border bg-[#141B2B] border-[#252D3A] text-[#AFC4E8]">
             NEXT.JS + FLUTTER + PG
@@ -131,10 +212,16 @@ export default function PulsoConsole() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-[#AFC4E8] flex items-center gap-2">
               <Zap className="w-3.5 h-3.5 text-[#2B85FF]" aria-hidden="true" />
-              <span>Flujo de Datos en Tiempo Real (WebSockets WSS)</span>
+              <span>
+                {isEn
+                  ? "Real-Time Data Flow (WSS WebSockets)"
+                  : "Flujo de Datos en Tiempo Real (WebSockets WSS)"}
+              </span>
             </span>
             <span className="text-[10px] font-mono text-[#9AA5B8]">
-              [SIMULACIÓN VISUAL · AMBIENTE DE PRUEBAS]
+              {isEn
+                ? "[VISUAL SIMULATION · TEST ENVIRONMENT]"
+                : "[SIMULACIÓN VISUAL · AMBIENTE DE PRUEBAS]"}
             </span>
           </div>
 
@@ -143,7 +230,11 @@ export default function PulsoConsole() {
             <svg
               viewBox="0 0 520 130"
               className="w-full h-auto select-none"
-              aria-label="Esquema arquitectónico de Pulso conectando Flutter, WebSockets y PostgreSQL"
+              aria-label={
+                isEn
+                  ? "Pulso architectural diagram connecting Flutter, WebSockets, and PostgreSQL"
+                  : "Esquema arquitectónico de Pulso conectando Flutter, WebSockets y PostgreSQL"
+              }
             >
               <defs>
                 <linearGradient id="pulso-line" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -157,7 +248,7 @@ export default function PulsoConsole() {
               <g transform="translate(15, 20)">
                 <rect width="130" height="90" rx="8" fill="#080B12" stroke="#252D3A" strokeWidth="1.2" />
                 <text x="65" y="32" textAnchor="middle" fill="#9AA5B8" fontSize="10" fontFamily="monospace">
-                  CLIENTES
+                  {isEn ? "CLIENTS" : "CLIENTES"}
                 </text>
                 <text x="65" y="52" textAnchor="middle" fill="#FFFFFF" fontSize="11" fontWeight="bold" fontFamily="monospace">
                   Flutter / Web
@@ -179,10 +270,10 @@ export default function PulsoConsole() {
               <g transform="translate(195, 20)">
                 <rect width="130" height="90" rx="8" fill="#080B12" stroke="#2B85FF" strokeWidth="1.2" />
                 <text x="65" y="32" textAnchor="middle" fill="#5CA8FF" fontSize="10" fontFamily="monospace">
-                  GATEWAY WS
+                  WS GATEWAY
                 </text>
                 <text x="65" y="52" textAnchor="middle" fill="#FFFFFF" fontSize="11" fontWeight="bold" fontFamily="monospace">
-                  Sala Concurrente
+                  {isEn ? "Concurrent Room" : "Sala Concurrente"}
                 </text>
                 <rect x="25" y="65" width="80" height="18" rx="4" fill="#1677FF" opacity="0.2" />
                 <text x="65" y="77" textAnchor="middle" fill="#2B85FF" fontSize="9" fontFamily="monospace">
@@ -201,14 +292,14 @@ export default function PulsoConsole() {
               <g transform="translate(375, 20)">
                 <rect width="130" height="90" rx="8" fill="#080B12" stroke="#252D3A" strokeWidth="1.2" />
                 <text x="65" y="32" textAnchor="middle" fill="#9AA5B8" fontSize="10" fontFamily="monospace">
-                  PERSISTENCIA
+                  {isEn ? "PERSISTENCE" : "PERSISTENCIA"}
                 </text>
                 <text x="65" y="52" textAnchor="middle" fill="#FFFFFF" fontSize="11" fontWeight="bold" fontFamily="monospace">
                   PostgreSQL
                 </text>
                 <rect x="25" y="65" width="80" height="18" rx="4" fill="#141B2B" stroke="#252D3A" />
                 <text x="65" y="77" textAnchor="middle" fill="#AFC4E8" fontSize="9" fontFamily="monospace">
-                  Índices B-Tree
+                  {isEn ? "B-Tree Indexes" : "Índices B-Tree"}
                 </text>
               </g>
             </svg>
@@ -219,10 +310,12 @@ export default function PulsoConsole() {
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-[#9AA5B8] flex items-center gap-1.5">
                 <Wifi className="w-3.5 h-3.5 text-[#5CA8FF]" aria-hidden="true" />
-                <span>Canal Activo: {selectedChannel.name}</span>
+                <span>
+                  {isEn ? `Active Channel: ${selectedChannel.name}` : `Canal Activo: ${selectedChannel.name}`}
+                </span>
               </span>
               <span className="text-[10px] text-[#5CA8FF] font-mono">
-                {selectedChannel.activeClients} pares [SIMULACIÓN]
+                {selectedChannel.activeClients} {isEn ? "peers [SIMULATION]" : "pares [SIMULACIÓN]"}
               </span>
             </div>
 
@@ -231,7 +324,9 @@ export default function PulsoConsole() {
                 <div key={m.id} className="flex items-start justify-between gap-2 text-[11px] leading-tight">
                   <div>
                     <span className="text-[#5CA8FF] font-semibold">@{m.user}: </span>
-                    <span className="text-white">{m.text}</span>
+                    <span className="text-white">
+                      {typeof m.text === "string" ? m.text : m.text[language]}
+                    </span>
                   </div>
                   <span className="text-[#9AA5B8] shrink-0 text-[10px]">
                     {m.time} ({m.latency}ms)
@@ -245,7 +340,11 @@ export default function PulsoConsole() {
                 type="text"
                 value={inputMsg}
                 onChange={(e) => setInputMsg(e.target.value)}
-                placeholder="Escribe un mensaje de prueba al canal..."
+                placeholder={
+                  isEn
+                    ? "Type a test message to the channel..."
+                    : "Escribe un mensaje de prueba al canal..."
+                }
                 className="flex-1 bg-[#080B12] border border-[#252D3A] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#9AA5B8]/60 focus:outline-none focus:border-[#2B85FF] font-mono"
               />
               <button
@@ -253,7 +352,7 @@ export default function PulsoConsole() {
                 className="px-3 py-1.5 rounded-lg bg-[#1677FF] hover:bg-[#2B85FF] text-white text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
               >
                 <Send className="w-3 h-3" aria-hidden="true" />
-                <span>Enviar</span>
+                <span>{isEn ? "Send" : "Enviar"}</span>
               </button>
             </form>
           </div>
@@ -264,7 +363,9 @@ export default function PulsoConsole() {
           <div className="p-4 rounded-xl bg-[#0D121D] border border-[#252D3A] space-y-4">
             <div className="flex items-center justify-between border-b border-[#252D3A] pb-3">
               <div>
-                <span className="text-[10px] font-mono uppercase text-[#9AA5B8]">Canal Comunitario</span>
+                <span className="text-[10px] font-mono uppercase text-[#9AA5B8]">
+                  {isEn ? "Community Channel" : "Canal Comunitario"}
+                </span>
                 <h3 className="text-sm font-bold text-white font-mono">{selectedChannel.name}</h3>
               </div>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#141B2B] text-[#5CA8FF] border border-[#252D3A]">
@@ -274,7 +375,9 @@ export default function PulsoConsole() {
 
             {/* Selector de Canales */}
             <div className="space-y-1.5">
-              <span className="text-[10px] font-mono uppercase text-[#9AA5B8] block">Seleccionar Sala de Chat</span>
+              <span className="text-[10px] font-mono uppercase text-[#9AA5B8] block">
+                {isEn ? "Select Chat Room" : "Seleccionar Sala de Chat"}
+              </span>
               <div className="grid grid-cols-1 gap-1.5">
                 {CHANNELS.map((ch) => (
                   <button
@@ -288,7 +391,9 @@ export default function PulsoConsole() {
                     }`}
                   >
                     <span>{ch.name}</span>
-                    <span className="text-[10px] text-[#5CA8FF]">{ch.activeClients} pares</span>
+                    <span className="text-[10px] text-[#5CA8FF]">
+                      {ch.activeClients} {isEn ? "peers" : "pares"}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -297,29 +402,39 @@ export default function PulsoConsole() {
             <div className="grid grid-cols-2 gap-3 text-xs font-mono">
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">RTT Objetivo</span>
-                  <span className="text-[9px] text-[#5CA8FF] font-semibold">[OBJETIVO]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Target RTT" : "RTT Objetivo"}</span>
+                  <span className="text-[9px] text-[#5CA8FF] font-semibold">
+                    {isEn ? "[TARGET]" : "[OBJETIVO]"}
+                  </span>
                 </div>
                 <span className="text-white font-medium block mt-1">~14 ms</span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Payload Avg</span>
-                  <span className="text-[9px] text-[#5CA8FF] font-semibold">[FORMATO]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Avg Payload" : "Payload Avg"}</span>
+                  <span className="text-[9px] text-[#5CA8FF] font-semibold">
+                    {isEn ? "[FORMAT]" : "[FORMATO]"}
+                  </span>
                 </div>
                 <span className="text-white font-medium block mt-1">{selectedChannel.payloadAvgBytes} B / msg</span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Concurrencia</span>
-                  <span className="text-[9px] text-amber-300 font-semibold">[SIMULACIÓN]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Concurrency" : "Concurrencia"}</span>
+                  <span className="text-[9px] text-amber-300 font-semibold">
+                    {isEn ? "[SIMULATION]" : "[SIMULACIÓN]"}
+                  </span>
                 </div>
-                <span className="text-white font-medium block mt-1">{selectedChannel.activeClients} clientes</span>
+                <span className="text-white font-medium block mt-1">
+                  {selectedChannel.activeClients} {isEn ? "clients" : "clientes"}
+                </span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Persistencia</span>
-                  <span className="text-[9px] text-emerald-400 font-semibold">[ARQUITECTURA]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Persistence" : "Persistencia"}</span>
+                  <span className="text-[9px] text-emerald-400 font-semibold">
+                    {isEn ? "[ARCHITECTURE]" : "[ARQUITECTURA]"}
+                  </span>
                 </div>
                 <span className="text-white font-medium block mt-1">PostgreSQL</span>
               </div>
@@ -329,12 +444,14 @@ export default function PulsoConsole() {
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-[#9AA5B8] flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
-                  <span>Seguridad de Conexión</span>
+                  <span>{isEn ? "Connection Security" : "Seguridad de Conexión"}</span>
                 </span>
                 <span className="text-emerald-400">TLS WSS + JWT</span>
               </div>
               <div className="text-[11px] text-[#AFC4E8]/80 leading-relaxed">
-                Mensajería cifrada en tránsito con verificación de tokens de sesión y desacoplamiento de subscripciones por sala.
+                {isEn
+                  ? "Encrypted messaging in transit with session token verification and decoupled per-room subscriptions."
+                  : "Mensajería cifrada en tránsito con verificación de tokens de sesión y desacoplamiento de subscripciones por sala."}
               </div>
             </div>
           </div>
@@ -343,7 +460,10 @@ export default function PulsoConsole() {
           <div className="p-3.5 rounded-xl bg-[#141B2B] border border-[#252D3A] text-xs font-mono flex items-start gap-2.5 text-[#AFC4E8]">
             <AlertCircle className="w-4 h-4 text-[#5CA8FF] shrink-0 mt-0.5" aria-hidden="true" />
             <p className="leading-relaxed text-[11px]">
-              <strong>Enfoque Comunitario:</strong> Pulso es una red social orientada a comunicación instantánea de baja latencia. No procesa signos vitales, telemetría cardíaca ni datos biomédicos.
+              <strong>{isEn ? "Community Focus:" : "Enfoque Comunitario:"}</strong>{" "}
+              {isEn
+                ? "Pulso is a social network built for low-latency instant messaging. It does not process vital signs, heart telemetry, or biomedical data."
+                : "Pulso es una red social orientada a comunicación instantánea de baja latencia. No procesa signos vitales, telemetría cardíaca ni datos biomédicos."}
             </p>
           </div>
         </div>

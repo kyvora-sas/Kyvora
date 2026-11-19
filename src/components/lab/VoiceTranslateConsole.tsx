@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Mic, Volume2, ArrowRightLeft, Cpu, Play, ShieldCheck } from "lucide-react";
 import { GithubIcon } from "@/components/SocialIcons";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface TranslationPair {
   id: string;
-  sourceLang: string;
-  targetLang: string;
+  sourceLang: { es: string; en: string };
+  targetLang: { es: string; en: string };
   sampleInput: string;
   sampleOutput: string;
   latencyMs: number;
@@ -16,16 +17,16 @@ interface TranslationPair {
 const SAMPLE_PAIRS: TranslationPair[] = [
   {
     id: "es-en",
-    sourceLang: "Español (ES)",
-    targetLang: "Inglés (EN)",
+    sourceLang: { es: "Español (ES)", en: "Spanish (ES)" },
+    targetLang: { es: "Inglés (EN)", en: "English (EN)" },
     sampleInput: "Convertimos ideas complejas en software real y mantenible.",
     sampleOutput: "We turn complex ideas into real, maintainable software.",
     latencyMs: 340,
   },
   {
     id: "en-es",
-    sourceLang: "Inglés (EN)",
-    targetLang: "Español (ES)",
+    sourceLang: { es: "Inglés (EN)", en: "English (EN)" },
+    targetLang: { es: "Español (ES)", en: "Spanish (ES)" },
     sampleInput: "Building low-latency digital systems with purposeful engineering.",
     sampleOutput: "Construyendo sistemas digitales de baja latencia con ingeniería intencional.",
     latencyMs: 310,
@@ -33,6 +34,8 @@ const SAMPLE_PAIRS: TranslationPair[] = [
 ];
 
 export default function VoiceTranslateConsole() {
+  const { language } = useLanguage();
+  const isEn = language === "en";
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<"idle" | "listening" | "translating" | "synthesizing">("idle");
@@ -90,7 +93,7 @@ export default function VoiceTranslateConsole() {
 
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium border bg-[#1677FF]/15 border-[#2B85FF]/40 text-[#5CA8FF]">
-            FASE BETA
+            {isEn ? "BETA PHASE" : "FASE BETA"}
           </span>
           <a
             href="https://github.com/Kyvora-org"
@@ -111,10 +114,14 @@ export default function VoiceTranslateConsole() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-[#AFC4E8] flex items-center gap-2">
               <Cpu className="w-3.5 h-3.5 text-[#2B85FF]" aria-hidden="true" />
-              <span>Pipeline de Inferencia Multimodal en 3 Fases</span>
+              <span>
+                {isEn
+                  ? "3-Stage Multimodal Inference Pipeline"
+                  : "Pipeline de Inferencia Multimodal en 3 Fases"}
+              </span>
             </span>
             <span className="text-[10px] font-mono text-[#9AA5B8]">
-              [DEMOSTRACIÓN DE SECUENCIA]
+              {isEn ? "[SEQUENCE DEMONSTRATION]" : "[DEMOSTRACIÓN DE SECUENCIA]"}
             </span>
           </div>
 
@@ -129,10 +136,10 @@ export default function VoiceTranslateConsole() {
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold">FASE 1</span>
+                <span className="text-[10px] font-bold">{isEn ? "STAGE 1" : "FASE 1"}</span>
                 <Mic className={`w-3.5 h-3.5 ${currentStep === "listening" ? "text-[#5CA8FF] animate-pulse" : ""}`} />
               </div>
-              <span className="block font-medium">Transcripción</span>
+              <span className="block font-medium">{isEn ? "Transcription" : "Transcripción"}</span>
               <span className="text-[10px] text-[#AFC4E8]/80 block mt-0.5">Web Speech API</span>
             </div>
 
@@ -145,10 +152,10 @@ export default function VoiceTranslateConsole() {
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold">FASE 2</span>
+                <span className="text-[10px] font-bold">{isEn ? "STAGE 2" : "FASE 2"}</span>
                 <Cpu className={`w-3.5 h-3.5 ${currentStep === "translating" ? "text-[#5CA8FF] animate-spin" : ""}`} />
               </div>
-              <span className="block font-medium">Traducción</span>
+              <span className="block font-medium">{isEn ? "Translation" : "Traducción"}</span>
               <span className="text-[10px] text-[#AFC4E8]/80 block mt-0.5">Gemini 2.5 Flash</span>
             </div>
 
@@ -161,10 +168,10 @@ export default function VoiceTranslateConsole() {
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold">FASE 3</span>
+                <span className="text-[10px] font-bold">{isEn ? "STAGE 3" : "FASE 3"}</span>
                 <Volume2 className={`w-3.5 h-3.5 ${currentStep === "synthesizing" ? "text-[#10B981] animate-bounce" : ""}`} />
               </div>
-              <span className="block font-medium">Síntesis Voz</span>
+              <span className="block font-medium">{isEn ? "Voice Synthesis" : "Síntesis Voz"}</span>
               <span className="text-[10px] text-[#AFC4E8]/80 block mt-0.5">SpeechSynthesis</span>
             </div>
           </div>
@@ -174,8 +181,12 @@ export default function VoiceTranslateConsole() {
             {/* Visualización de Nivel de Decibelios */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#9AA5B8]">Nivel de Entrada Microfónico</span>
-                <span className="text-[10px] text-[#5CA8FF]">[SIMULACIÓN REACTIVA] -18 dBFS</span>
+                <span className="text-[#9AA5B8]">
+                  {isEn ? "Microphone Input Level" : "Nivel de Entrada Microfónico"}
+                </span>
+                <span className="text-[10px] text-[#5CA8FF]">
+                  {isEn ? "[REACTIVE SIMULATION] -18 dBFS" : "[SIMULACIÓN REACTIVA] -18 dBFS"}
+                </span>
               </div>
               <div className="grid grid-cols-16 gap-1 h-2 w-full bg-[#080B12] p-0.5 rounded border border-[#252D3A]">
                 {Array.from({ length: 16 }).map((_, i) => (
@@ -200,8 +211,12 @@ export default function VoiceTranslateConsole() {
             {/* Tarjeta de Entrada (Origen) */}
             <div className="p-3 rounded-lg bg-[#080B12] border border-[#252D3A] space-y-1">
               <div className="flex items-center justify-between text-[10px] text-[#9AA5B8]">
-                <span>ORIGEN: {currentPair.sourceLang}</span>
-                <span className="text-[#5CA8FF]">Voz Capturada</span>
+                <span>
+                  {isEn ? "SOURCE" : "ORIGEN"}: {currentPair.sourceLang[language]}
+                </span>
+                <span className="text-[#5CA8FF]">
+                  {isEn ? "Captured Voice" : "Voz Capturada"}
+                </span>
               </div>
               <p className="text-white text-xs leading-relaxed font-sans font-light">
                 &ldquo;{currentPair.sampleInput}&rdquo;
@@ -211,8 +226,12 @@ export default function VoiceTranslateConsole() {
             {/* Tarjeta de Salida (Destino) */}
             <div className="p-3 rounded-lg bg-[#080B12] border border-[#252D3A] space-y-1">
               <div className="flex items-center justify-between text-[10px] text-[#9AA5B8]">
-                <span>DESTINO: {currentPair.targetLang}</span>
-                <span className="text-[#10B981]">Texto y Audio Sintetizado</span>
+                <span>
+                  {isEn ? "TARGET" : "DESTINO"}: {currentPair.targetLang[language]}
+                </span>
+                <span className="text-[#10B981]">
+                  {isEn ? "Synthesized Text & Audio" : "Texto y Audio Sintetizado"}
+                </span>
               </div>
               <p className="text-[#AFC4E8] text-xs leading-relaxed font-sans font-light">
                 &ldquo;{currentPair.sampleOutput}&rdquo;
@@ -226,32 +245,40 @@ export default function VoiceTranslateConsole() {
           <div className="p-4 rounded-xl bg-[#0D121D] border border-[#252D3A] space-y-4 font-mono text-xs">
             <div className="flex items-center justify-between border-b border-[#252D3A] pb-3">
               <div>
-                <span className="text-[10px] uppercase text-[#9AA5B8]">Modo Conversación</span>
-                <h3 className="text-sm font-bold text-white">Bidireccional en Vivo</h3>
+                <span className="text-[10px] uppercase text-[#9AA5B8]">
+                  {isEn ? "Conversation Mode" : "Modo Conversación"}
+                </span>
+                <h3 className="text-sm font-bold text-white">
+                  {isEn ? "Live Bidirectional" : "Bidireccional en Vivo"}
+                </h3>
               </div>
               <button
                 type="button"
                 onClick={handleSwapLanguages}
                 className="p-2 rounded bg-[#141B2B] hover:bg-[#1C263B] text-[#5CA8FF] border border-[#252D3A] transition-colors cursor-pointer flex items-center gap-1 text-[11px]"
-                title="Invertir idiomas"
+                title={isEn ? "Swap languages" : "Invertir idiomas"}
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Invertir</span>
+                <span>{isEn ? "Swap" : "Invertir"}</span>
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Latencia Media</span>
-                  <span className="text-[9px] text-[#5CA8FF] font-semibold">[OBJETIVO]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "Avg Latency" : "Latencia Media"}</span>
+                  <span className="text-[9px] text-[#5CA8FF] font-semibold">
+                    {isEn ? "[TARGET]" : "[OBJETIVO]"}
+                  </span>
                 </div>
                 <span className="text-white font-medium block mt-1">~{currentPair.latencyMs} ms</span>
               </div>
               <div className="p-2.5 rounded bg-[#080B12] border border-[#252D3A]">
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#9AA5B8]">Motor TTS</span>
-                  <span className="text-[9px] text-emerald-400 font-semibold">[API NATIVA]</span>
+                  <span className="text-[#9AA5B8]">{isEn ? "TTS Engine" : "Motor TTS"}</span>
+                  <span className="text-[9px] text-emerald-400 font-semibold">
+                    {isEn ? "[NATIVE API]" : "[API NATIVA]"}
+                  </span>
                 </div>
                 <span className="text-emerald-400 font-medium block mt-1">SpeechSynthesis</span>
               </div>
@@ -260,8 +287,12 @@ export default function VoiceTranslateConsole() {
             {/* Conmutador de Prevención de Eco */}
             <div className="p-3 rounded bg-[#080B12] border border-[#252D3A] flex items-center justify-between">
               <div>
-                <span className="text-white block text-[11px] font-medium">Supresión de Eco Acústico</span>
-                <span className="text-[10px] text-[#9AA5B8]">[CONFIGURACIÓN BROWSER API]</span>
+                <span className="text-white block text-[11px] font-medium">
+                  {isEn ? "Acoustic Echo Cancellation" : "Supresión de Eco Acústico"}
+                </span>
+                <span className="text-[10px] text-[#9AA5B8]">
+                  {isEn ? "[BROWSER API CONFIG]" : "[CONFIGURACIÓN BROWSER API]"}
+                </span>
               </div>
               <button
                 type="button"
@@ -272,7 +303,13 @@ export default function VoiceTranslateConsole() {
                     : "bg-[#141B2B] border-[#252D3A] text-[#9AA5B8]"
                 }`}
               >
-                {echoCancellationEnabled ? "ACTIVO" : "INACTIVO"}
+                {echoCancellationEnabled
+                  ? isEn
+                    ? "ACTIVE"
+                    : "ACTIVO"
+                  : isEn
+                    ? "INACTIVE"
+                    : "INACTIVO"}
               </button>
             </div>
 
@@ -283,16 +320,26 @@ export default function VoiceTranslateConsole() {
               className="w-full py-2.5 px-3 rounded-lg bg-[#1677FF] hover:bg-[#2B85FF] text-white text-xs font-mono tracking-wider uppercase transition-colors flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B85FF]"
             >
               <Play className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>{isProcessing ? "Ejecutando traducción..." : "Simular Flujo Completo"}</span>
+              <span>
+                {isProcessing
+                  ? isEn
+                    ? "Running translation..."
+                    : "Ejecutando traducción..."
+                  : isEn
+                    ? "Simulate Full Pipeline"
+                    : "Simular Flujo Completo"}
+              </span>
             </button>
 
             <div className="p-3 rounded bg-[#080B12] border border-[#252D3A] text-[11px] text-[#AFC4E8]/80 leading-relaxed space-y-1">
               <div className="flex items-center gap-1.5 text-white font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Arquitectura Abierta del Cliente</span>
+                <span>{isEn ? "Open Client Architecture" : "Arquitectura Abierta del Cliente"}</span>
               </div>
               <p>
-                VoiceTranslate procesa la señal de audio directamente en el navegador mediante Web Speech API estándar, sin depender de servidores propietarios de transcripción continua.
+                {isEn
+                  ? "VoiceTranslate processes audio directly in the browser using standard Web Speech API, without relying on proprietary continuous transcription servers."
+                  : "VoiceTranslate procesa la señal de audio directamente en el navegador mediante Web Speech API estándar, sin depender de servidores propietarios de transcripción continua."}
               </p>
             </div>
           </div>

@@ -1,19 +1,70 @@
 "use client";
 
-import Image from "next/image";
+import { useState, useRef, KeyboardEvent } from "react";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, FlaskConical, HeartHandshake } from "lucide-react";
+import {
+  FlaskConical,
+  HeartHandshake,
+  BookOpen,
+  ArrowUpRight,
+  Radio,
+  Activity,
+  Mic,
+  Film,
+  Terminal,
+} from "lucide-react";
 import { GithubIcon } from "@/components/SocialIcons";
 import { projectsConfig, ProjectItem } from "@/config/projects";
 import { useLanguage } from "@/context/LanguageContext";
 import { Container } from "@/components/ui";
-import {
-  KineticHeadline,
-  MotionItem,
-  MotionReveal,
-  MotionStagger,
-} from "@/components/motion/MotionPrimitives";
-import { kyvoraProductFrameVariants } from "@/lib/motion";
+import { KineticHeadline, MotionReveal } from "@/components/motion/MotionPrimitives";
+
+import dynamic from "next/dynamic";
+
+// Consolas interactivas del Laboratorio de I+D (Carga diferida bajo demanda)
+const ConsoleSkeleton = ({ name, code }: { name: string; code: string }) => (
+  <div
+    className="w-full min-h-[520px] rounded-2xl bg-[#080B12] border border-[#252D3A] flex flex-col items-center justify-center p-8 text-center font-mono text-xs"
+    aria-busy="true"
+  >
+    <div className="w-8 h-8 rounded-full border-2 border-[#1677FF] border-t-transparent animate-spin mb-4" />
+    <span className="text-white font-semibold tracking-wider">CARGANDO CONSOLA // {code}</span>
+    <span className="text-[#9AA5B8] text-[11px] mt-1">{name}</span>
+  </div>
+);
+
+const QuakeNetConsole = dynamic(() => import("./lab/QuakeNetConsole"), {
+  ssr: false,
+  loading: () => <ConsoleSkeleton code="LAB-01" name="QuakeNet // IoT Micro-sensores" />,
+});
+
+const PulsoConsole = dynamic(() => import("./lab/PulsoConsole"), {
+  ssr: false,
+  loading: () => <ConsoleSkeleton code="LAB-02" name="Pulso // Mensajería Realtime" />,
+});
+
+const VoiceTranslateConsole = dynamic(() => import("./lab/VoiceTranslateConsole"), {
+  ssr: false,
+  loading: () => <ConsoleSkeleton code="LAB-03" name="VoiceTranslate // Gemini Flash + Web Speech" />,
+});
+
+const KyvoraStudioConsole = dynamic(() => import("./lab/KyvoraStudioConsole"), {
+  ssr: false,
+  loading: () => <ConsoleSkeleton code="LAB-04" name="Kyvora Studio // NLE Tauri 2 + FFmpeg 7" />,
+});
+
+const PulsAiConsole = dynamic(() => import("./lab/PulsAiConsole"), {
+  ssr: false,
+  loading: () => <ConsoleSkeleton code="LAB-05" name="PulsAI // Ollama Local Gateway" />,
+});
+
+const LAB_ORDER: { id: string; code: string; icon: typeof Radio }[] = [
+  { id: "quakenet", code: "LAB-01", icon: Radio },
+  { id: "pulso", code: "LAB-02", icon: Activity },
+  { id: "voicetranslate", code: "LAB-03", icon: Mic },
+  { id: "kyvora-studio", code: "LAB-04", icon: Film },
+  { id: "pulsai", code: "LAB-05", icon: Terminal },
+];
 
 function StatusBadge({
   status,
@@ -31,89 +82,20 @@ function StatusBadge({
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border ${styles}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${styles}`}
     >
       {status}
     </span>
   );
 }
 
-type LocalizedProjectItem = Omit<ProjectItem, "status"> & { status: string };
-
-function ProjectCardContent({
-  proj,
-  repoLabel,
-  internalLabel,
-  purposeLabel,
-}: {
-  proj: LocalizedProjectItem;
-  repoLabel: string;
-  internalLabel: string;
-  purposeLabel: string;
-}) {
-  return (
-    <div className="p-6 sm:p-7 flex flex-col justify-between flex-1 space-y-5">
-      <div className="space-y-3.5">
-        <div className="flex items-center justify-between gap-4">
-          <StatusBadge status={proj.status} variant={proj.statusVariant} />
-          {proj.links?.repo ? (
-            <a
-              href={proj.links.repo}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#9AA5B8] hover:text-white transition-colors inline-flex items-center gap-1.5 text-xs font-mono py-2 -my-2 px-1 -mx-1 min-h-[36px]"
-              aria-label={`${repoLabel} ${proj.name}`}
-            >
-              <GithubIcon className="w-4 h-4" />
-              <span>{repoLabel}</span>
-            </a>
-          ) : (
-            <span className="text-[11px] font-mono text-[#9AA5B8]/70 uppercase">
-              {internalLabel}
-            </span>
-          )}
-        </div>
-
-        <h3 className="font-display text-2xl sm:text-[1.65rem] font-bold tracking-tight text-white flex items-center justify-between gap-2">
-          <span>{proj.name}</span>
-          {proj.links?.repo && (
-            <ArrowUpRight
-              className="w-5 h-5 text-[#9AA5B8] group-hover:text-[#2B85FF] transition-colors shrink-0"
-              aria-hidden="true"
-            />
-          )}
-        </h3>
-
-        <p className="text-sm text-[#AFC4E8]/90 font-light leading-relaxed">
-          {proj.tagline}
-        </p>
-
-        <div className="pt-1 text-xs text-[#9AA5B8] space-y-1">
-          <strong className="text-white block font-mono uppercase tracking-wider text-[11px]">
-            {purposeLabel}
-          </strong>
-          <p className="font-light leading-relaxed">{proj.purpose}</p>
-        </div>
-      </div>
-
-      <div className="pt-4 border-t border-[#252D3A] flex flex-wrap gap-1.5">
-        {proj.technologies.map((tech) => (
-          <span
-            key={tech}
-            className="px-2.5 py-1 rounded-md bg-[#080B12] border border-[#252D3A] text-[11px] font-mono text-[#AFC4E8]/85"
-          >
-            {tech}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function LabProjects() {
   const { language, t } = useLanguage();
   const recursosHref = language === "en" ? "/recursos/en" : "/recursos";
+  const [activeProjectId, setActiveProjectId] = useState<string>("quakenet");
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Localización de proyectos
   const getLocalizedProject = (proj: ProjectItem) => {
     const loc = t.lab.projects[proj.id];
     return {
@@ -124,13 +106,39 @@ export default function LabProjects() {
     };
   };
 
-  const pulsoRaw = projectsConfig.find((p) => p.id === "pulso")!;
-  const quakeRaw = projectsConfig.find((p) => p.id === "quakenet")!;
-  const pulso = getLocalizedProject(pulsoRaw);
-  const quakeNet = getLocalizedProject(quakeRaw);
-  const secondaryProjects = projectsConfig
-    .filter((p) => p.id !== "pulso" && p.id !== "quakenet")
-    .map(getLocalizedProject);
+  // Proyectos ordenados para el tablist
+  const orderedProjects = LAB_ORDER.map((item) => {
+    const raw = projectsConfig.find((p) => p.id === item.id)!;
+    const localized = getLocalizedProject(raw);
+    return {
+      ...localized,
+      code: item.code,
+      icon: item.icon,
+    };
+  });
+
+  const activeProject = orderedProjects.find((p) => p.id === activeProjectId) || orderedProjects[0];
+
+  // Manejo de navegación por teclado WAI-ARIA
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    let nextIndex = -1;
+    if (e.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % orderedProjects.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + orderedProjects.length) % orderedProjects.length;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = orderedProjects.length - 1;
+    }
+
+    if (nextIndex !== -1) {
+      e.preventDefault();
+      const nextProj = orderedProjects[nextIndex];
+      setActiveProjectId(nextProj.id);
+      tabRefs.current[nextIndex]?.focus();
+    }
+  };
 
   return (
     <section
@@ -138,15 +146,15 @@ export default function LabProjects() {
       aria-labelledby="lab-heading"
       className="py-20 md:py-28 bg-[#080B12] border-t border-[#252D3A] relative overflow-hidden"
     >
-      {/* Textura experimental diferenciada respecto a KYVORA Studio */}
+      {/* Textura experimental ambiental KYVORA */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_50%_at_20%_10%,rgba(22,119,255,0.09),transparent)]"
       />
 
       <Container className="relative z-10">
-        {/* Encabezado KYVORA LAB con línea de visión oficial */}
-        <div className="mb-14 md:mb-18 flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[#252D3A] pb-8">
+        {/* Encabezado KYVORA LAB */}
+        <div className="mb-12 md:mb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[#252D3A] pb-8">
           <MotionReveal className="space-y-3">
             <div className="inline-flex items-center gap-2.5 text-xs font-mono tracking-[0.18em] uppercase text-[#5CA8FF]">
               <FlaskConical className="w-4 h-4 text-[#1677FF]" aria-hidden="true" />
@@ -170,94 +178,159 @@ export default function LabProjects() {
           </MotionReveal>
         </div>
 
-        {/* Fila 1: Pulso y QuakeNet como foco experimental */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-          <MotionReveal variants={kyvoraProductFrameVariants} className="lg:col-span-7 flex">
-            <article className="w-full rounded-2xl bg-[#0D121D] border border-[#252D3A] hover:border-[#1677FF]/60 transition-colors overflow-hidden flex flex-col group">
-              <div className="aspect-[16/10] bg-[#080B12] relative overflow-hidden border-b border-[#252D3A]">
-                {pulso.image && (
-                  <Image
-                    src={pulso.image}
-                    alt={pulso.imageAlt || pulso.name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 58vw"
-                    className="object-cover object-top opacity-92 group-hover:opacity-100 motion-safe:group-hover:scale-[1.02] transition-all duration-500"
-                  />
-                )}
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-[#080B12]/85 backdrop-blur-sm border border-[#252D3A] text-[10px] font-mono uppercase tracking-[0.14em] text-[#AFC4E8]">
-                  01 · {t.lab.featuredLabel}
-                </div>
-              </div>
-              <ProjectCardContent
-                proj={pulso}
-                repoLabel={t.lab.repoBtn}
-                internalLabel={t.lab.internalPrototype}
-                purposeLabel={t.lab.purposeLabel}
-              />
-            </article>
-          </MotionReveal>
-
-          <MotionReveal
-            variants={kyvoraProductFrameVariants}
-            delay={0.08}
-            className="lg:col-span-5 flex"
+        {/* Selector de Consolas de I+D (Tablist WAI-ARIA) */}
+        <div className="mb-8">
+          <div
+            role="tablist"
+            aria-label="Proyectos de KYVORA Lab"
+            className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#252D3A]/60 scrollbar-thin"
           >
-            <article className="w-full rounded-2xl bg-[#0D121D] border border-[#252D3A] hover:border-[#1677FF]/60 transition-colors overflow-hidden flex flex-col group">
-              <div className="aspect-[4/3] bg-[#080B12] p-3 border-b border-[#252D3A] relative overflow-hidden">
-                {quakeNet.image && (
-                  <div className="relative w-full h-full rounded-xl overflow-hidden bg-[#080B12] border border-[#252D3A]">
-                    <Image
-                      src={quakeNet.image}
-                      alt={quakeNet.imageAlt || quakeNet.name}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 42vw"
-                      className="object-contain opacity-95 group-hover:opacity-100 motion-safe:group-hover:scale-[1.02] transition-all duration-500"
-                    />
+            {orderedProjects.map((proj, idx) => {
+              const isSelected = proj.id === activeProjectId;
+              const IconComponent = proj.icon;
+
+              return (
+                <button
+                  key={proj.id}
+                  ref={(el) => {
+                    tabRefs.current[idx] = el;
+                  }}
+                  role="tab"
+                  id={`tab-${proj.id}`}
+                  aria-selected={isSelected}
+                  aria-controls={`panel-${proj.id}`}
+                  tabIndex={isSelected ? 0 : -1}
+                  onClick={() => setActiveProjectId(proj.id)}
+                  onKeyDown={(e) => handleKeyDown(e, idx)}
+                  className={`px-4 py-3 rounded-xl border text-xs font-mono transition-all flex items-center gap-3 shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#1677FF] ${isSelected
+                    ? "bg-[#0D121D] border-[#1677FF] text-white shadow-lg shadow-[#1677FF]/10"
+                    : "bg-[#080B12]/80 hover:bg-[#0D121D] border-[#252D3A] text-[#9AA5B8] hover:text-[#AFC4E8]"
+                    }`}
+                >
+                  <span
+                    className={`p-1.5 rounded-lg border ${isSelected
+                      ? "bg-[#141B2B] text-[#5CA8FF] border-[#1677FF]/40"
+                      : "bg-[#0D121D] text-[#9AA5B8] border-[#252D3A]"
+                      }`}
+                  >
+                    <IconComponent className="w-3.5 h-3.5" aria-hidden="true" />
+                  </span>
+
+                  <div className="text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-[#5CA8FF] font-semibold">{proj.code}</span>
+                      <span className="text-white font-medium">{proj.name}</span>
+                    </div>
+                    <span className="text-[10px] text-[#9AA5B8] block truncate max-w-[130px]">
+                      {proj.status}
+                    </span>
                   </div>
-                )}
-              </div>
-              <ProjectCardContent
-                proj={quakeNet}
-                repoLabel={t.lab.repoBtn}
-                internalLabel={t.lab.internalPrototype}
-                purposeLabel={t.lab.purposeLabel}
-              />
-            </article>
-          </MotionReveal>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Fila 2: Kyvora Studio, PulsAI y VoiceTranslate */}
-        <MotionStagger className="mt-6 lg:mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-          {secondaryProjects.map((proj) => (
-            <MotionItem key={proj.id} className="flex">
-              <article className="w-full rounded-2xl bg-[#0D121D] border border-[#252D3A] hover:border-[#1677FF]/60 transition-colors overflow-hidden flex flex-col group">
-                {proj.image && (
-                  <div className="aspect-[16/10] bg-[#080B12] border-b border-[#252D3A] relative overflow-hidden">
-                    <Image
-                      src={proj.image}
-                      alt={proj.imageAlt || proj.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover object-top opacity-92 group-hover:opacity-100 motion-safe:group-hover:scale-[1.02] transition-all duration-500"
-                    />
-                  </div>
+        {/* Contenedor Estable del Panel Activo (CLS = 0.000) */}
+        <div
+          role="tabpanel"
+          id={`panel-${activeProject.id}`}
+          aria-labelledby={`tab-${activeProject.id}`}
+          tabIndex={0}
+          className="focus:outline-none min-h-[580px] sm:min-h-[640px] flex flex-col justify-between transition-opacity duration-200"
+        >
+          {/* Renderizado de la Consola correspondiente */}
+          <div className="w-full">
+            {activeProject.id === "quakenet" && <QuakeNetConsole />}
+            {activeProject.id === "pulso" && <PulsoConsole />}
+            {activeProject.id === "voicetranslate" && <VoiceTranslateConsole />}
+            {activeProject.id === "kyvora-studio" && <KyvoraStudioConsole />}
+            {activeProject.id === "pulsai" && <PulsAiConsole />}
+          </div>
+
+          {/* Ficha Técnica & Metadatos de la Iniciativa */}
+          <div className="mt-6 p-6 rounded-2xl bg-[#0D121D] border border-[#252D3A] grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            {/* Columna 1: Propósito & Visión Técnica */}
+            <div className="md:col-span-6 space-y-2">
+              <div className="flex items-center gap-2">
+                <StatusBadge status={activeProject.status} variant={activeProject.statusVariant} />
+                <span className="text-xs font-mono text-[#9AA5B8]">
+                  {`${activeProject.code} // ${activeProject.name}`}
+                </span>
+              </div>
+              <h3 className="text-lg font-display font-semibold text-white">
+                {activeProject.tagline}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#AFC4E8]/90 font-light leading-relaxed">
+                {activeProject.purpose}
+              </p>
+            </div>
+
+            {/* Columna 2: Stack Verificado */}
+            <div className="md:col-span-3 space-y-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-white block">
+                Stack Tecnológico
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {activeProject.technologies.map((tech) => (
+                  <span
+                    key={tech}
+                    className="px-2.5 py-1 rounded-md bg-[#080B12] border border-[#252D3A] text-[11px] font-mono text-[#AFC4E8]"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Columna 3: Código Fuente & Enlaces */}
+            <div className="md:col-span-3 space-y-3 flex flex-col justify-between h-full">
+              <div>
+                <span className="text-[11px] font-mono uppercase tracking-wider text-white block mb-2">
+                  Código & Comunidad
+                </span>
+                {activeProject.links?.repo ? (
+                  <a
+                    href={activeProject.links.repo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#080B12] hover:bg-[#141B2B] border border-[#252D3A] text-xs font-mono text-[#AFC4E8] hover:text-white transition-colors w-full"
+                    aria-label={`${t.lab.repoBtn} ${activeProject.name}`}
+                  >
+                    <GithubIcon className="w-4 h-4 text-[#5CA8FF]" />
+                    <span className="truncate">{t.lab.repoBtn}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 ml-auto text-[#9AA5B8]" />
+                  </a>
+                ) : (
+                  <span className="text-xs font-mono text-[#9AA5B8]">
+                    {t.lab.internalPrototype}
+                  </span>
                 )}
-                <ProjectCardContent
-                  proj={proj}
-                  repoLabel={t.lab.repoBtn}
-                  internalLabel={t.lab.internalPrototype}
-                  purposeLabel={t.lab.purposeLabel}
-                />
-              </article>
-            </MotionItem>
-          ))}
-        </MotionStagger>
+              </div>
+
+              {activeProject.donationTargetEligible && (
+                <div className="pt-2 border-t border-[#252D3A]">
+                  <Link
+                    href="#donate"
+                    className="text-[11px] font-mono text-[#5CA8FF] hover:text-white transition-colors flex items-center gap-1.5"
+                  >
+                    <HeartHandshake className="w-3.5 h-3.5 text-[#2B85FF]" />
+                    <span>Apoyar en Donate Us</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Puente natural hacia Donate Us y Recursos */}
         <MotionReveal delay={0.12} className="mt-10">
           <div className="p-6 rounded-2xl bg-[#0D121D] border border-[#252D3A] flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div className="flex items-start sm:items-center gap-3.5">
-              <HeartHandshake className="w-5 h-5 text-[#2B85FF] shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
+              <HeartHandshake
+                className="w-5 h-5 text-[#2B85FF] shrink-0 mt-0.5 sm:mt-0"
+                aria-hidden="true"
+              />
               <p className="text-xs sm:text-sm text-[#AFC4E8] font-light leading-relaxed">
                 {t.lab.contributionText}
               </p>

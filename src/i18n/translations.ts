@@ -121,10 +121,25 @@ export interface Translations {
     title: string;
     subtitle: string;
     phasePrefix: string;
+    stageLabel: string;
+    prevStage: string;
+    nextStage: string;
+    interactiveHint: string;
+    vectorsHeading: string;
+    deliverablesHeading: string;
+    disclaimer: string;
     steps: Array<{
       num: string;
+      code: string;
       title: string;
+      tagline: string;
       desc: string;
+      category: string;
+      elements: Array<{
+        name: string;
+        detail: string;
+      }>;
+      deliverables: string[];
     }>;
   };
   human: {
@@ -534,36 +549,173 @@ export const translations: Record<Language, Translations> = {
       ],
     },
     process: {
-      badge: "Metodología KYVORA",
-      title: "Proceso Progresivo en 5 Etapas",
+      badge: "Metodología KYVORA // El Flujo de la Intención",
+      title: "De la intención inicial al software funcional",
       subtitle:
-        "Un flujo ordenado de principio a fin, con comunicación directa y validaciones tangibles antes de cada paso siguiente.",
-      phasePrefix: "Etapa",
+        "Un recorrido orgánico de transformación técnica: comprendemos la necesidad genuina, estructuramos la arquitectura idónea, desarrollamos con rigor modular, validamos cada detalle y acompañamos la evolución continua.",
+      phasePrefix: "Fase",
+      stageLabel: "Etapa",
+      prevStage: "Etapa anterior",
+      nextStage: "Siguiente etapa",
+      interactiveHint: "Explora cada nodo del flujo para conocer su enfoque, arquitectura y entregables clave",
+      vectorsHeading: "Ejes de transformación",
+      deliverablesHeading: "Entregables & Puntos de control",
+      disclaimer: "Nota de ingeniería: Las etapas se adaptan a la escala y requerimientos de cada proyecto. No constituyen certificaciones formales ni garantías infalibles.",
       steps: [
         {
           num: "01",
-          title: "Exploración",
-          desc: "Comprendemos el problema operativo o comercial, las restricciones técnicas reales y el contexto antes de diseñar una línea de código.",
+          code: "STG-01 :: INTENT-ANALYSIS",
+          title: "Descubrimiento",
+          tagline: "Entender antes de construir",
+          category: "Análisis & Contexto",
+          desc: "KYVORA identifica la necesidad de negocio, escucha activamente a los involucrados, analiza el problema en su entorno operativo real y define los objetivos prioritarios antes de escribir código.",
+          elements: [
+            {
+              name: "Necesidad",
+              detail: "Identificación del dolor operativo o comercial concreto que se busca resolver.",
+            },
+            {
+              name: "Contexto",
+              detail: "Estudio del ecosistema técnico, restricciones normativas y comportamiento del usuario final.",
+            },
+            {
+              name: "Objetivos",
+              detail: "Definición de metas cuantitativas y cualitativas de éxito sin suposiciones apresuradas.",
+            },
+            {
+              name: "Alcance inicial",
+              detail: "Fijación honesta y transparente de fronteras viables para la primera versión funcional.",
+            },
+          ],
+          deliverables: [
+            "Matriz de requerimientos técnicos y restricciones operativas",
+            "Definición de alcance inicial y criterios de éxito",
+            "Roadmap priorizado de capacidades",
+          ],
         },
         {
           num: "02",
-          title: "Diseño",
-          desc: "Definimos arquitectura de software, modelo de datos, flujos clave e identidad visual con foco en claridad y propósito.",
+          code: "STG-02 :: SYSTEM-DESIGN",
+          title: "Estrategia y arquitectura",
+          tagline: "Diseñar la solución correcta",
+          category: "Estructura & Viabilidad",
+          desc: "Se define la estructura técnica de la solución, las tecnologías apropiadas, la arquitectura desacoplada y la ruta de implementación para garantizar viabilidad, seguridad y escalabilidad.",
+          elements: [
+            {
+              name: "Arquitectura",
+              detail: "Diseño de capas desacopladas, contratos de interfaz y modelos de datos normalizados.",
+            },
+            {
+              name: "Tecnologías",
+              detail: "Selección rigurosa de runtimes, bases de datos y librerías según rendimiento y estabilidad.",
+            },
+            {
+              name: "Planificación",
+              detail: "Estructuración de hitos de entrega iterativa, mitigación de riesgos y dependencias críticas.",
+            },
+            {
+              name: "Viabilidad",
+              detail: "Estimación objetiva de costos de cómputo, límites de latencia y requisitos de mantenimiento.",
+            },
+          ],
+          deliverables: [
+            "Esquema de arquitectura de software y flujo de datos",
+            "Definición de stack técnico y contratos de API",
+            "Plan de trabajo iterativo por hitos demostrables",
+          ],
         },
         {
           num: "03",
-          title: "Desarrollo",
-          desc: "Implementamos con código tipado, limpio y modular, habilitando revisiones verificables durante el avance.",
+          code: "STG-03 :: SYNTHESIS-BUILD",
+          title: "Diseño y desarrollo",
+          tagline: "Convertir ideas en tecnología",
+          category: "Síntesis & Construcción",
+          desc: "Se construye la solución mediante desarrollo iterativo, diseño de interfaces con alta precisión tipográfica y funcional, e implementación modular con código tipado, limpio y mantenible.",
+          elements: [
+            {
+              name: "Diseño",
+              detail: "Diseño UI/UX de alta fidelidad, coherencia visual editorial y accesibilidad integrada.",
+            },
+            {
+              name: "Desarrollo",
+              detail: "Implementación modular fuertemente tipada con TypeScript, Next.js y componentes desacoplados.",
+            },
+            {
+              name: "Integración",
+              detail: "Conexión robusta de bases de datos, APIs de terceros, almacenamiento y pasarelas de pago.",
+            },
+            {
+              name: "Iteración",
+              detail: "Ciclos continuos de construcción con retroalimentación regular y versiones tangibles.",
+            },
+          ],
+          deliverables: [
+            "Sistema de componentes de interfaz con soporte responsivo",
+            "Base de código modular tipada y debidamente documentada",
+            "Despliegues periódicos en entorno de staging para revisión",
+          ],
         },
         {
           num: "04",
+          code: "STG-04 :: RIGOR-AUDIT",
           title: "Validación",
-          desc: "Ejecutamos pruebas de seguridad, accesibilidad, rendimiento y respuesta en dispositivos reales antes de publicar.",
+          tagline: "Cada detalle debe tener un propósito",
+          category: "Rigor & Verificación",
+          desc: "Se comprueba minuciosamente el funcionamiento global, la experiencia de usuario en dispositivos reales, la seguridad de endpoints y la estabilidad bajo condiciones de uso real antes del despliegue.",
+          elements: [
+            {
+              name: "Pruebas",
+              detail: "Suites de pruebas automatizadas, verificación de invariantes y cobertura de flujos críticos.",
+            },
+            {
+              name: "Correcciones",
+              detail: "Resolución sistemática de inconsistencias, refinamiento de interacciones y pulido visual.",
+            },
+            {
+              name: "Rendimiento",
+              detail: "Auditoría de Core Web Vitals (LCP, TBT, CLS), tiempos de respuesta y optimización de memoria.",
+            },
+            {
+              name: "Seguridad",
+              detail: "Verificación de cabeceras HTTP, políticas CSP restrictivas, sanitización y control de accesos.",
+            },
+          ],
+          deliverables: [
+            "Informe de pruebas de seguridad y estabilidad",
+            "Reporte de auditoría de rendimiento Lighthouse y accesibilidad WCAG",
+            "Matriz de comprobación en múltiples viewports y dispositivos",
+          ],
         },
         {
           num: "05",
-          title: "Evolución",
-          desc: "Desplegamos de forma controlada y entregamos una base documentada y mantenible preparada para iterar con criterio.",
+          code: "STG-05 :: LIFECYCLE-SCALE",
+          title: "Entrega y evolución",
+          tagline: "La entrega no tiene que ser el final",
+          category: "Puesta en Marcha & Evolución",
+          desc: "Se entrega la solución con su documentación completa y, según el alcance acordado, se contempla mantenimiento técnico continuo, mejoras incrementales y evolución tecnológica del producto.",
+          elements: [
+            {
+              name: "Implementación",
+              detail: "Despliegue ordenado en infraestructura de producción con pipelines CI/CD y rollback seguro.",
+            },
+            {
+              name: "Entrega",
+              detail: "Traspaso estructurado de repositorios, accesos de administración y propiedad integral.",
+            },
+            {
+              name: "Documentación",
+              detail: "Manuales de despliegue, guías de configuración de entorno y documentación de arquitectura.",
+            },
+            {
+              name: "Evolución",
+              detail: "Acompañamiento técnico, monitoreo de incidentes y planificación de nuevas capacidades.",
+            },
+          ],
+          deliverables: [
+            "Puesta en producción y transferencia de accesos e infraestructura",
+            "Documentación técnica de arquitectura y guía operativa",
+            "Plan de soporte y evolución técnica según alcance acordado",
+          ],
         },
       ],
     },
@@ -1035,36 +1187,173 @@ export const translations: Record<Language, Translations> = {
       ],
     },
     process: {
-      badge: "KYVORA Methodology",
-      title: "5-Stage Progressive Process",
+      badge: "KYVORA Methodology // The Flow of Intent",
+      title: "From initial intent to functional software",
       subtitle:
-        "A clear, direct engineering workflow from exploration to evolution, built on tangible checkpoints before advancing.",
-      phasePrefix: "Stage",
+        "An organic journey of technical transformation: understanding authentic needs, architecting the right foundation, engineering with modular rigor, verifying every detail, and supporting continuous evolution.",
+      phasePrefix: "Phase",
+      stageLabel: "Stage",
+      prevStage: "Previous stage",
+      nextStage: "Next stage",
+      interactiveHint: "Explore each node in the flow to examine its engineering rationale, architecture, and core deliverables",
+      vectorsHeading: "Transformation vectors",
+      deliverablesHeading: "Deliverables & Quality Checkpoints",
+      disclaimer: "Engineering note: Stages are tailored to each project's scale and specifications. They do not constitute formal certifications or absolute guarantees.",
       steps: [
         {
           num: "01",
-          title: "Exploration",
-          desc: "We understand your operational or commercial problem, technical constraints, and real context before writing a line of code.",
+          code: "STG-01 :: INTENT-ANALYSIS",
+          title: "Discovery",
+          tagline: "Understand before building",
+          category: "Analysis & Context",
+          desc: "KYVORA identifies authentic business needs, actively listens to stakeholders, examines the problem within its operational environment, and defines priority goals before writing a single line of code.",
+          elements: [
+            {
+              name: "Need",
+              detail: "Pinpointing the concrete operational or commercial bottleneck to solve.",
+            },
+            {
+              name: "Context",
+              detail: "Assessing technical constraints, ecosystem dependencies, and end-user behavior.",
+            },
+            {
+              name: "Objectives",
+              detail: "Establishing quantifiable and qualitative success metrics without premature assumptions.",
+            },
+            {
+              name: "Initial Scope",
+              detail: "Transparently defining viable boundaries for the first functional version.",
+            },
+          ],
+          deliverables: [
+            "Technical requirements and operational constraints matrix",
+            "Initial scope definition and success criteria",
+            "Prioritized capability roadmap",
+          ],
         },
         {
           num: "02",
-          title: "Design",
-          desc: "We structure software architecture, data models, key user flows, and visual identity with clarity and intent.",
+          code: "STG-02 :: SYSTEM-DESIGN",
+          title: "Strategy & architecture",
+          tagline: "Design the right solution",
+          category: "Structure & Feasibility",
+          desc: "We define the technical structure of the solution, appropriate technologies, decoupled architecture, and implementation blueprint to ensure feasibility, security, and true scalability.",
+          elements: [
+            {
+              name: "Architecture",
+              detail: "Structuring decoupled software layers, API contracts, and relational data schemas.",
+            },
+            {
+              name: "Technologies",
+              detail: "Pragmatic selection of runtimes, databases, and tooling driven by stability and performance.",
+            },
+            {
+              name: "Planning",
+              detail: "Defining iterative delivery milestones, critical paths, and dependency management.",
+            },
+            {
+              name: "Feasibility",
+              detail: "Evaluating infrastructure costs, concurrency thresholds, and operational maintenance needs.",
+            },
+          ],
+          deliverables: [
+            "Software architecture and data flow blueprint",
+            "Technical stack selection and API contract specifications",
+            "Iterative milestone delivery plan",
+          ],
         },
         {
           num: "03",
-          title: "Development",
-          desc: "We build with clean, strongly typed, modular code while providing testable progress checkpoints.",
+          code: "STG-03 :: SYNTHESIS-BUILD",
+          title: "Design & development",
+          tagline: "Turn ideas into technology",
+          category: "Synthesis & Construction",
+          desc: "We translate architecture into functional software through iterative sprints, crafting responsive interfaces with typographic and ergonomic precision while writing clean, modular, and strongly typed code.",
+          elements: [
+            {
+              name: "Design",
+              detail: "High-craft UI/UX interfaces with distinct editorial character and integrated accessibility.",
+            },
+            {
+              name: "Development",
+              detail: "Strongly typed modular engineering with TypeScript, Next.js, and decoupled patterns.",
+            },
+            {
+              name: "Integration",
+              detail: "Robust connection of databases, third-party APIs, asset storage, and transactional gateways.",
+            },
+            {
+              name: "Iteration",
+              detail: "Continuous build cadences with regular feedback loops and tangible staging demos.",
+            },
+          ],
+          deliverables: [
+            "Responsive component design system and interaction specifications",
+            "Clean, modular, and fully typed production codebase",
+            "Periodic deployments to staging environments for review",
+          ],
         },
         {
           num: "04",
+          code: "STG-04 :: RIGOR-AUDIT",
           title: "Validation",
-          desc: "We run security, accessibility, performance, and multi-device responsiveness checks prior to release.",
+          tagline: "Every detail must serve a purpose",
+          category: "Rigor & Verification",
+          desc: "We rigorously verify complete system functionality, real-device user experience, endpoint and data security, and stability under real-world conditions prior to any production release.",
+          elements: [
+            {
+              name: "Testing",
+              detail: "Automated test suites, edge case verification, and business invariant checks.",
+            },
+            {
+              name: "Corrections",
+              detail: "Systematic remediation of edge behaviors, interaction polishing, and visual fine-tuning.",
+            },
+            {
+              name: "Performance",
+              detail: "Auditing Core Web Vitals (LCP, TBT, CLS), response latencies, and memory footprints.",
+            },
+            {
+              name: "Security",
+              detail: "Verification of HTTP security headers, strict CSP policies, sanitization, and access control.",
+            },
+          ],
+          deliverables: [
+            "Security verification and system stability audit report",
+            "Lighthouse performance and WCAG 2.1 AA accessibility audit",
+            "Multi-viewport responsive matrix verification",
+          ],
         },
         {
           num: "05",
-          title: "Evolution",
-          desc: "We deploy cleanly and hand over a documented, maintainable foundation ready to scale and iterate intentionally.",
+          code: "STG-05 :: LIFECYCLE-SCALE",
+          title: "Delivery & evolution",
+          tagline: "Delivery doesn't have to be the end",
+          category: "Deployment & Evolution",
+          desc: "We launch the solution with complete technical documentation and, based on agreed scope, provide ongoing technical stewardship, incremental improvements, and architectural scaling.",
+          elements: [
+            {
+              name: "Deployment",
+              detail: "Controlled production release with automated CI/CD pipelines and rollback safeguards.",
+            },
+            {
+              name: "Handoff",
+              detail: "Structured transfer of repositories, administrative access, and full IP ownership.",
+            },
+            {
+              name: "Documentation",
+              detail: "Architecture blueprints, environment setup guides, and operational runbooks.",
+            },
+            {
+              name: "Evolution",
+              detail: "Ongoing engineering advisory, incident telemetry, and future capability roadmaps.",
+            },
+          ],
+          deliverables: [
+            "Production release and comprehensive credential/infrastructure handoff",
+            "Technical architecture and operational runbook documentation",
+            "Evolutionary support and maintenance agreement tailored to scope",
+          ],
         },
       ],
     },
